@@ -1,15 +1,17 @@
+import ProfileManager from "@/components/ProfileManager";
+
 export default function ProfilePage() {
     return (
-        <div className="w-full">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Settings</h1>
-            <p className="text-gray-600 text-lg mb-8">
-                Customize your profile and manage your preferences.
-            </p>
-            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
-                <p className="text-gray-500 text-center py-12">
-                    Profile settings content will be implemented here.
+        <div className="w-full space-y-6">
+            <div>
+                <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                    Settings
+                </h1>
+                <p className="text-gray-600 text-lg">
+                    Manage profiles through API-backed controllers.
                 </p>
             </div>
+            <ProfileManager />
         </div>
     );
 }

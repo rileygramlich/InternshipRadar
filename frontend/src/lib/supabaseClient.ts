@@ -1,21 +1,40 @@
-// Supabase Client Setup and Common Operations
-// This file demonstrates how to use Supabase in the Next.js application
+// Supabase server-side client and data-access helpers for API routes.
+// NOTE: This uses the service role key; do not import into client components.
 
 import { createClient } from "@supabase/supabase-js";
 
-// Initialize Supabase client
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL environment variable.");
+}
+
+if (!serviceRoleKey) {
+    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable.");
+}
+
+export const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+    },
+});
 
 // ============================================================================
 // PROFILE OPERATIONS
 // ============================================================================
 
-/**
- * Create a new user profile
- */
+export async function listProfiles() {
+    const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data;
+}
+
 export async function createProfile(
     discord_webhook_url: string,
     skills: string[],
@@ -36,9 +55,6 @@ export async function createProfile(
     return data[0];
 }
 
-/**
- * Get a profile by ID
- */
 export async function getProfile(profileId: string) {
     const { data, error } = await supabase
         .from("profiles")
@@ -50,9 +66,6 @@ export async function getProfile(profileId: string) {
     return data;
 }
 
-/**
- * Update a profile
- */
 export async function updateProfile(
     profileId: string,
     updates: {
@@ -72,13 +85,19 @@ export async function updateProfile(
     return data;
 }
 
+export async function deleteProfile(profileId: string) {
+    const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", profileId);
+
+    if (error) throw error;
+}
+
 // ============================================================================
 // JOB POSTINGS OPERATIONS
 // ============================================================================
 
-/**
- * Create a new job posting (typically called by n8n automation)
- */
 export async function createJobPosting(
     company: string,
     title: string,
@@ -101,9 +120,6 @@ export async function createJobPosting(
     return data[0];
 }
 
-/**
- * Get all job postings with pagination
- */
 export async function getJobPostings(
     page: number = 0,
     pageSize: number = 20,
@@ -125,9 +141,6 @@ export async function getJobPostings(
     return { data, total: count };
 }
 
-/**
- * Get a single job posting
- */
 export async function getJobPosting(jobId: string) {
     const { data, error } = await supabase
         .from("job_postings")
@@ -139,13 +152,39 @@ export async function getJobPosting(jobId: string) {
     return data;
 }
 
+export async function updateJobPosting(
+    jobId: string,
+    updates: {
+        company?: string;
+        title?: string;
+        url?: string;
+        description?: string;
+    },
+) {
+    const { data, error } = await supabase
+        .from("job_postings")
+        .update(updates)
+        .eq("id", jobId)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
+export async function deleteJobPosting(jobId: string) {
+    const { error } = await supabase
+        .from("job_postings")
+        .delete()
+        .eq("id", jobId);
+
+    if (error) throw error;
+}
+
 // ============================================================================
 // APPLICATION OPERATIONS
 // ============================================================================
 
-/**
- * Create a new application (when user applies to a job)
- */
 export async function createApplication(
     profileId: string,
     jobId: string,
@@ -168,9 +207,6 @@ export async function createApplication(
     return data[0];
 }
 
-/**
- * Update application status
- */
 export async function updateApplicationStatus(
     applicationId: string,
     status: "saved" | "applied" | "interview" | "rejected" | "offer",
@@ -186,9 +222,24 @@ export async function updateApplicationStatus(
     return data;
 }
 
-/**
- * Get all applications for a profile
- */
+export async function updateApplication(
+    applicationId: string,
+    updates: {
+        status?: "saved" | "applied" | "interview" | "rejected" | "offer";
+        match_score?: number;
+    },
+) {
+    const { data, error } = await supabase
+        .from("applications")
+        .update(updates)
+        .eq("id", applicationId)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
 export async function getProfileApplications(
     profileId: string,
     status?: string,
@@ -222,10 +273,44 @@ export async function getProfileApplications(
     return data;
 }
 
-/**
- * Get jobs that match a profile (by location and skills)
- * Returns jobs sorted by match score
- */
+export async function getApplicationById(applicationId: string) {
+    const { data, error } = await supabase
+        .from("applications")
+        .select("*")
+        .eq("id", applicationId)
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
+export async function listApplications(filters?: {
+    profileId?: string;
+    jobId?: string;
+    status?: string;
+}) {
+    let query = supabase.from("applications").select("*");
+
+    if (filters?.profileId) {
+        query = query.eq("profile_id", filters.profileId);
+    }
+
+    if (filters?.jobId) {
+        query = query.eq("job_id", filters.jobId);
+    }
+
+    if (filters?.status) {
+        query = query.eq("status", filters.status);
+    }
+
+    const { data, error } = await query.order("created_at", {
+        ascending: false,
+    });
+
+    if (error) throw error;
+    return data;
+}
+
 export async function getMatchingJobs(profileId: string, limit: number = 10) {
     const { data, error } = await supabase
         .from("applications")
@@ -249,9 +334,6 @@ export async function getMatchingJobs(profileId: string, limit: number = 10) {
     return data;
 }
 
-/**
- * Batch update match scores (called by n8n automation)
- */
 export async function updateMatchScores(
     updates: Array<{
         applicationId: string;
@@ -270,20 +352,15 @@ export async function updateMatchScores(
 
     if (errors.length > 0) {
         throw new Error(
-            `Failed to update match scores: ${errors.map((e) => e!.message).join(", ")}`,
+            `Failed to update match scores: ${errors
+                .map((e) => e!.message)
+                .join(", ")}`,
         );
     }
 
     return results;
 }
 
-// ============================================================================
-// CLEANUP / DELETION OPERATIONS
-// ============================================================================
-
-/**
- * Delete an application
- */
 export async function deleteApplication(applicationId: string) {
     const { error } = await supabase
         .from("applications")
@@ -292,17 +369,3 @@ export async function deleteApplication(applicationId: string) {
 
     if (error) throw error;
 }
-
-/**
- * Delete a profile (cascade deletes applications)
- */
-export async function deleteProfile(profileId: string) {
-    const { error } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", profileId);
-
-    if (error) throw error;
-}
-
-export default supabase;

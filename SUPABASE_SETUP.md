@@ -47,12 +47,11 @@ Once your project is created:
 
 ## Step 4: Configure Local Environment
 
-1. Navigate to the `frontend/` directory
-2. Copy the `.env.local` template (or create it if it doesn't exist):
+1. From the repository root, create a `.env.local` file (never commit this):
     ```bash
-    cp .env.local.example .env.local
+    cp frontend/.env.local.example .env.local
     ```
-3. Fill in your actual API keys:
+2. Fill in your actual API keys:
 
     ```
     NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
@@ -60,10 +59,7 @@ Once your project is created:
     SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
     ```
 
-4. Verify `.env.local` is in `.gitignore` (it should be):
-    ```bash
-    cat .gitignore | grep "env.local"
-    ```
+3. The root `.gitignore` now ignores all `.env*` files (including `frontend/.env.local`).
 
 ## Step 5: Test the Connection (Optional)
 
