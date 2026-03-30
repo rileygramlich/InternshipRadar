@@ -1,3 +1,16 @@
+# Getting Started
+
+Clone the repo and run the Next.js app locally.
+
+```bash
+git clone https://github.com/<your-org>/InternshipRadar.git
+cd InternshipRadar/frontend
+npm install
+npm run dev
+```
+
+Then open http://localhost:3000 and log in via the Supabase Auth UI. Ensure `.env.local` is populated with your Supabase project URL and keys before starting.
+
 # AI Internship Advisor & Application Tracker (Internship Radar)
 
 ### COMP 2633 – Mini Hackathon 2
