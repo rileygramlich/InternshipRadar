@@ -139,18 +139,17 @@ This document covers the setup and configuration of the Supabase database for th
 
 **What has been created:**
 
-1. **[`frontend/.env.local`](frontend/.env.local)** - Local environment file (NOT committed)
-    - Contains placeholder keys for local development
-    - This file should NOT be committed to Git
-    - Add to `.gitignore` (already done in `frontend/.gitignore`)
+1. **[.env.local](.env.local)** (root, NOT committed)
+    - Holds real Supabase keys for local dev
+    - Covered by root `.gitignore`
 
-2. **[`frontend/.env.local.example`](frontend/.env.local.example)** - Template (CAN be committed)
+2. **[frontend/.env.local.example](frontend/.env.local.example)** (template, safe to commit)
     - Shows required variables and their format
     - Can be shared with team members
-    - Instructions for filling in actual values
 
-3. **[`.env.local` at root](... /.env.local)** - Fallback root config
-    - Alternative if environment variables needed at project root
+3. **Root [.gitignore](.gitignore)**
+    - Ignores all `.env*` files (root, frontend, backend)
+    - Keeps Supabase keys out of git by default
 
 **Required Environment Variables:**
 
