@@ -1,0 +1,30 @@
+# Node / Next.js
+node_modules
+.next
+out
+build
+coverage
+*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS / Editor
+.DS_Store
+*.pem
+
+# Environment variables (keep Supabase keys out of git)
+.env
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+backend/.env
+backend/.env.local
+backend/.env.*.local
+
+# Vercel
+.vercel
