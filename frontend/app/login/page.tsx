@@ -14,13 +14,21 @@ export default function LoginPage() {
 
     useEffect(() => {
         let active = true;
+        const { data: listener } = supabase.auth.onAuthStateChange(
+            (_event, session) => {
+                if (session) {
+                    router.replace("/profile");
+                }
+            },
+        );
+
         async function checkSession() {
             const {
                 data: { session },
             } = await supabase.auth.getSession();
             if (!active) return;
             if (session) {
-                router.replace("/radar");
+                router.replace("/profile");
             } else {
                 setLoading(false);
             }
@@ -28,6 +36,7 @@ export default function LoginPage() {
         checkSession();
         return () => {
             active = false;
+            listener.subscription.unsubscribe();
         };
     }, [router, supabase]);
 
@@ -54,7 +63,7 @@ export default function LoginPage() {
                     providers={[]}
                     redirectTo={
                         typeof window !== "undefined"
-                            ? `${window.location.origin}/radar`
+                            ? `${window.location.origin}/profile`
                             : undefined
                     }
                 />
