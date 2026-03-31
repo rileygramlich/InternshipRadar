@@ -1,10 +1,59 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+
+import { createClient } from "@/utils/supabase/client";
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const router = useRouter();
+    const supabase = useMemo(() => createClient(), []);
+
+    const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [userName, setUserName] = useState<string | null>(null);
+    const [authLoading, setAuthLoading] = useState(false);
+
+    useEffect(() => {
+        let active = true;
+        async function loadUser() {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            if (!active) return;
+            setUserEmail(user?.email ?? null);
+            const metadataName =
+                (user?.user_metadata as { full_name?: string } | null)
+                    ?.full_name ?? null;
+            setUserName(metadataName || user?.email || null);
+        }
+
+        loadUser();
+        return () => {
+            active = false;
+        };
+    }, [supabase]);
+
+    async function handleLogout() {
+        try {
+            setAuthLoading(true);
+            await supabase.auth.signOut();
+            router.replace("/login");
+        } finally {
+            setAuthLoading(false);
+        }
+    }
+
+    async function handleSwitchUser() {
+        try {
+            setAuthLoading(true);
+            await supabase.auth.signOut();
+            router.push("/login");
+        } finally {
+            setAuthLoading(false);
+        }
+    }
 
     const navItems = [
         { href: "/radar", label: "Discovery", icon: "📡" },
@@ -43,8 +92,34 @@ export default function Sidebar() {
             </nav>
 
             <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-                <div className="px-4 py-3 rounded-lg bg-gray-50 text-center">
-                    <p className="text-sm text-gray-600">v0.1.0</p>
+                <div className="px-4 py-3 rounded-lg bg-gray-50">
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <p className="text-sm font-medium text-gray-900">
+                                {userName || "Account"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                                {userEmail || "Not signed in"}
+                            </p>
+                        </div>
+                        <span className="text-xs text-gray-500">v0.1.0</span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button
+                            onClick={handleSwitchUser}
+                            className="w-full rounded bg-white border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            disabled={authLoading}
+                        >
+                            Switch user
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="w-full rounded bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-60"
+                            disabled={authLoading}
+                        >
+                            Log out
+                        </button>
+                    </div>
                 </div>
             </div>
         </aside>

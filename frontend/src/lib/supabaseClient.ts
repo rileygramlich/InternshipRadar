@@ -36,6 +36,8 @@ export async function listProfiles() {
 }
 
 export async function createProfile(
+    name: string,
+    email: string,
     discord_webhook_url: string,
     skills: string[],
     location_preference: string,
@@ -44,6 +46,8 @@ export async function createProfile(
         .from("profiles")
         .insert([
             {
+                name,
+                email,
                 discord_webhook_url,
                 skills,
                 location_preference,
@@ -69,6 +73,8 @@ export async function getProfile(profileId: string) {
 export async function updateProfile(
     profileId: string,
     updates: {
+        name?: string;
+        email?: string;
         discord_webhook_url?: string;
         skills?: string[];
         location_preference?: string;
@@ -276,7 +282,19 @@ export async function getProfileApplications(
 export async function getApplicationById(applicationId: string) {
     const { data, error } = await supabase
         .from("applications")
-        .select("*")
+        .select(
+            `
+                *,
+                job_postings:job_id (
+                    id,
+                    company,
+                    title,
+                    url,
+                    description,
+                    created_at
+                )
+            `,
+        )
         .eq("id", applicationId)
         .single();
 
@@ -289,7 +307,19 @@ export async function listApplications(filters?: {
     jobId?: string;
     status?: string;
 }) {
-    let query = supabase.from("applications").select("*");
+    let query = supabase.from("applications").select(
+        `
+            *,
+            job_postings:job_id (
+                id,
+                company,
+                title,
+                url,
+                description,
+                created_at
+            )
+        `,
+    );
 
     if (filters?.profileId) {
         query = query.eq("profile_id", filters.profileId);
