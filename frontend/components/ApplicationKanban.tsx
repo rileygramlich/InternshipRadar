@@ -52,6 +52,7 @@ export default function ApplicationKanban() {
 
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [updatingIds, setUpdatingIds] = useState<Record<string, boolean>>({});
+    const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
 
     const refresh = useCallback(async () => {
         setLoading(true);
@@ -159,6 +160,50 @@ export default function ApplicationKanban() {
         }
     }
 
+    async function handleDeleteJobPosting(application: Application) {
+        const jobPostingId = application.job_postings?.id;
+
+        if (!jobPostingId) {
+            setError("This card has no linked job posting to delete.");
+            return;
+        }
+
+        const shouldDelete = window.confirm(
+            "Are you sure you want to delete this job posting?",
+        );
+
+        if (!shouldDelete) {
+            return;
+        }
+
+        setError(null);
+        setDeletingJobId(application.job_id);
+
+        try {
+            const res = await fetch(`/api/job-postings/${jobPostingId}`, {
+                method: "DELETE",
+            });
+
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(json.error || "Failed to delete job posting");
+            }
+
+            // Remove all cards referencing the deleted posting.
+            setApplications((prev) =>
+                prev.filter((item) => item.job_id !== application.job_id),
+            );
+        } catch (err) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : "Failed to delete job posting",
+            );
+        } finally {
+            setDeletingJobId(null);
+        }
+    }
+
     function onDropToColumn(status: ApplicationStatus) {
         return async (event: DragEvent<HTMLDivElement>) => {
             event.preventDefault();
@@ -179,7 +224,7 @@ export default function ApplicationKanban() {
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-semibold text-gray-900">
-                        Application Kanban
+                        Applications
                     </h2>
                     <p className="text-sm text-gray-600 mt-1">
                         Drag cards between columns to change status. Changes
@@ -262,17 +307,43 @@ export default function ApplicationKanban() {
                                                 }
                                             </p>
                                         )}
-                                        {application.job_postings?.url && (
-                                            <a
-                                                href={
-                                                    application.job_postings.url
-                                                }
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-xs text-indigo-600 hover:text-indigo-700 break-all"
-                                            >
-                                                View Posting
-                                            </a>
+                                        {(application.job_postings?.url ||
+                                            application.job_postings?.id) && (
+                                            <div className="mt-1 flex items-center gap-3">
+                                                {application.job_postings
+                                                    ?.url && (
+                                                    <a
+                                                        href={
+                                                            application
+                                                                .job_postings
+                                                                .url
+                                                        }
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="text-xs text-indigo-600 hover:text-indigo-700 break-all"
+                                                    >
+                                                        View Posting
+                                                    </a>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleDeleteJobPosting(
+                                                            application,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        deletingJobId ===
+                                                        application.job_id
+                                                    }
+                                                    className="text-xs text-red-600 hover:text-red-700 disabled:opacity-50"
+                                                >
+                                                    {deletingJobId ===
+                                                    application.job_id
+                                                        ? "Deleting..."
+                                                        : "Delete Posting"}
+                                                </button>
+                                            </div>
                                         )}
                                         <p className="text-xs text-gray-600 mt-1 break-all">
                                             Profile: {application.profile_id}
