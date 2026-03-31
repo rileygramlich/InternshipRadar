@@ -282,7 +282,19 @@ export async function getProfileApplications(
 export async function getApplicationById(applicationId: string) {
     const { data, error } = await supabase
         .from("applications")
-        .select("*")
+        .select(
+            `
+                *,
+                job_postings:job_id (
+                    id,
+                    company,
+                    title,
+                    url,
+                    description,
+                    created_at
+                )
+            `,
+        )
         .eq("id", applicationId)
         .single();
 
@@ -295,7 +307,19 @@ export async function listApplications(filters?: {
     jobId?: string;
     status?: string;
 }) {
-    let query = supabase.from("applications").select("*");
+    let query = supabase.from("applications").select(
+        `
+            *,
+            job_postings:job_id (
+                id,
+                company,
+                title,
+                url,
+                description,
+                created_at
+            )
+        `,
+    );
 
     if (filters?.profileId) {
         query = query.eq("profile_id", filters.profileId);

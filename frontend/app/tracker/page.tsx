@@ -1,4 +1,4 @@
-import ApplicationManager from "@/components/ApplicationManager";
+import ApplicationKanban from "@/components/ApplicationKanban";
 
 export default function TrackerPage() {
     return (
@@ -8,10 +8,11 @@ export default function TrackerPage() {
                     Kanban
                 </h1>
                 <p className="text-gray-600 text-lg">
-                    Manage applications with CRUD controllers hitting Supabase.
+                    Drag and drop applications between stages with real-time
+                    persisted status updates.
                 </p>
             </div>
-            <ApplicationManager />
+            <ApplicationKanban />
         </div>
     );
 }

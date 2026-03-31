@@ -1,7 +1,13 @@
 "use client";
 
-import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
+
+type ApplicationStatus =
+    | "saved"
+    | "applied"
+    | "interview"
+    | "rejected"
+    | "offer";
 
 type JobPosting = {
     id: string;
@@ -19,17 +25,24 @@ type EditableJob = {
     description: string;
 };
 
+type Profile = {
+    id: string;
+    name: string | null;
+    email: string | null;
+};
+
 export default function JobManager() {
     const [jobs, setJobs] = useState<JobPosting[]>([]);
+    const [profiles, setProfiles] = useState<Profile[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    const [company, setCompany] = useState("");
-    const [title, setTitle] = useState("");
-    const [url, setUrl] = useState("");
-    const [description, setDescription] = useState("");
+    const [actionMessage, setActionMessage] = useState<string | null>(null);
 
     const [edits, setEdits] = useState<Record<string, EditableJob>>({});
+    const [selectedProfileId, setSelectedProfileId] = useState("");
+    const [quickApplyStatus, setQuickApplyStatus] =
+        useState<ApplicationStatus>("saved");
+    const [addingForJobId, setAddingForJobId] = useState<string | null>(null);
 
     useEffect(() => {
         refresh();
@@ -38,14 +51,35 @@ export default function JobManager() {
     async function refresh() {
         setLoading(true);
         setError(null);
+        setActionMessage(null);
         try {
-            const res = await fetch("/api/job-postings");
-            const json = await res.json();
-            if (!res.ok) throw new Error(json.error || "Failed to load jobs");
-            const jobsArray: JobPosting[] = Array.isArray(json.data)
-                ? json.data
+            const [jobsRes, profilesRes] = await Promise.all([
+                fetch("/api/job-postings"),
+                fetch("/api/profiles"),
+            ]);
+
+            const jobsJson = await jobsRes.json();
+            const profilesJson = await profilesRes.json();
+
+            if (!jobsRes.ok) {
+                throw new Error(jobsJson.error || "Failed to load jobs");
+            }
+
+            if (!profilesRes.ok) {
+                throw new Error(
+                    profilesJson.error || "Failed to load profiles",
+                );
+            }
+
+            const jobsArray: JobPosting[] = Array.isArray(jobsJson.data)
+                ? jobsJson.data
                 : [];
+            const profilesArray: Profile[] = Array.isArray(profilesJson.data)
+                ? profilesJson.data
+                : [];
+
             setJobs(jobsArray);
+            setProfiles(profilesArray);
             setEdits(
                 jobsArray.reduce(
                     (acc, job) => {
@@ -60,35 +94,23 @@ export default function JobManager() {
                     {} as Record<string, EditableJob>,
                 ),
             );
+
+            setSelectedProfileId((current) => {
+                if (
+                    current &&
+                    profilesArray.some((profile) => profile.id === current)
+                ) {
+                    return current;
+                }
+
+                return profilesArray[0]?.id ?? "";
+            });
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "Failed to load jobs",
             );
         } finally {
             setLoading(false);
-        }
-    }
-
-    async function handleCreate(e: FormEvent) {
-        e.preventDefault();
-        setError(null);
-        try {
-            const res = await fetch("/api/job-postings", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ company, title, url, description }),
-            });
-            const json = await res.json();
-            if (!res.ok) throw new Error(json.error || "Failed to create job");
-            setCompany("");
-            setTitle("");
-            setUrl("");
-            setDescription("");
-            await refresh();
-        } catch (err) {
-            setError(
-                err instanceof Error ? err.message : "Failed to create job",
-            );
         }
     }
 
@@ -114,6 +136,7 @@ export default function JobManager() {
 
     async function handleDelete(id: string) {
         setError(null);
+        setActionMessage(null);
         try {
             const res = await fetch(`/api/job-postings/${id}`, {
                 method: "DELETE",
@@ -130,68 +153,51 @@ export default function JobManager() {
         }
     }
 
+    async function handleAddToApplications(job: JobPosting) {
+        setError(null);
+        setActionMessage(null);
+
+        if (!selectedProfileId) {
+            setError("Select a profile before adding a job to applications.");
+            return;
+        }
+
+        setAddingForJobId(job.id);
+        try {
+            const res = await fetch("/api/applications", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    profileId: selectedProfileId,
+                    jobId: job.id,
+                    status: quickApplyStatus,
+                    matchScore: 0,
+                }),
+            });
+
+            const json = await res.json();
+            if (!res.ok) {
+                throw new Error(
+                    json.error || "Failed to add job to applications",
+                );
+            }
+
+            setActionMessage(
+                `Added ${job.company} - ${job.title} to Applications.`,
+            );
+        } catch (err) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : "Failed to add job to applications",
+            );
+        } finally {
+            setAddingForJobId(null);
+        }
+    }
+
     return (
         <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                    Create Job Posting
-                </h2>
-                <form onSubmit={handleCreate} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                                Company
-                            </label>
-                            <input
-                                className="mt-1 w-full rounded border-gray-300 shadow-sm"
-                                value={company}
-                                onChange={(e) => setCompany(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                                Title
-                            </label>
-                            <input
-                                className="mt-1 w-full rounded border-gray-300 shadow-sm"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                            URL
-                        </label>
-                        <input
-                            className="mt-1 w-full rounded border-gray-300 shadow-sm"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            placeholder="https://company.com/job/123"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                            Description
-                        </label>
-                        <textarea
-                            className="mt-1 w-full rounded border-gray-300 shadow-sm"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            rows={3}
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
-                    >
-                        Create Job
-                    </button>
-                </form>
-            </div>
-
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold text-gray-900">
@@ -206,6 +212,61 @@ export default function JobManager() {
                     </button>
                 </div>
                 {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+                {actionMessage && (
+                    <p className="text-sm text-emerald-600 mb-3">
+                        {actionMessage}
+                    </p>
+                )}
+
+                <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Add To Applications: Profile
+                        </label>
+                        <select
+                            className="mt-1 w-full rounded border-gray-300 shadow-sm text-sm"
+                            value={selectedProfileId}
+                            onChange={(e) =>
+                                setSelectedProfileId(e.target.value)
+                            }
+                            disabled={profiles.length === 0}
+                        >
+                            {profiles.length === 0 ? (
+                                <option value="">No profiles available</option>
+                            ) : (
+                                profiles.map((profile) => (
+                                    <option key={profile.id} value={profile.id}>
+                                        {(profile.name || "Unnamed profile") +
+                                            (profile.email
+                                                ? ` (${profile.email})`
+                                                : "")}
+                                    </option>
+                                ))
+                            )}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Default Application Status
+                        </label>
+                        <select
+                            className="mt-1 w-full rounded border-gray-300 shadow-sm text-sm"
+                            value={quickApplyStatus}
+                            onChange={(e) =>
+                                setQuickApplyStatus(
+                                    e.target.value as ApplicationStatus,
+                                )
+                            }
+                        >
+                            <option value="saved">Saved</option>
+                            <option value="applied">Applied</option>
+                            <option value="interview">Interview</option>
+                            <option value="offer">Offer</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+
                 {jobs.length === 0 ? (
                     <p className="text-gray-500">No job postings yet.</p>
                 ) : (
@@ -333,6 +394,20 @@ export default function JobManager() {
                                     </div>
                                 </div>
                                 <div className="mt-3 flex justify-end">
+                                    <button
+                                        onClick={() =>
+                                            handleAddToApplications(job)
+                                        }
+                                        className="mr-2 px-3 py-1.5 rounded bg-emerald-600 text-white text-sm hover:bg-emerald-700 disabled:opacity-50"
+                                        disabled={
+                                            !selectedProfileId ||
+                                            addingForJobId === job.id
+                                        }
+                                    >
+                                        {addingForJobId === job.id
+                                            ? "Adding..."
+                                            : "Add To Applications"}
+                                    </button>
                                     <button
                                         onClick={() => handleUpdate(job.id)}
                                         className="px-3 py-1.5 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-700"
