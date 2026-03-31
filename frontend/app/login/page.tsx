@@ -2,13 +2,14 @@
 
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
     const supabase = useMemo(() => createClient(), []);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -18,12 +19,21 @@ export default function LoginPage() {
     const [authError, setAuthError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
 
+    const redirectPath = searchParams.get("redirect") || "/profile";
+
+    useEffect(() => {
+        const requestedMode = searchParams.get("mode");
+        if (requestedMode === "signup" || requestedMode === "signin") {
+            setMode(requestedMode);
+        }
+    }, [searchParams]);
+
     useEffect(() => {
         let active = true;
         const { data: listener } = supabase.auth.onAuthStateChange(
             (_event, session) => {
                 if (session) {
-                    router.replace("/profile");
+                    router.replace(redirectPath);
                 }
             },
         );
@@ -34,7 +44,7 @@ export default function LoginPage() {
             } = await supabase.auth.getSession();
             if (!active) return;
             if (session) {
-                router.replace("/profile");
+                router.replace(redirectPath);
             } else {
                 setLoading(false);
             }
@@ -44,7 +54,7 @@ export default function LoginPage() {
             active = false;
             listener.subscription.unsubscribe();
         };
-    }, [router, supabase]);
+    }, [redirectPath, router, supabase]);
 
     if (loading) {
         return (
@@ -82,7 +92,7 @@ export default function LoginPage() {
                     throw new Error(error.message);
                 }
 
-                router.replace("/profile");
+                router.replace(redirectPath);
                 return;
             }
 
@@ -90,7 +100,12 @@ export default function LoginPage() {
                 email: email.trim(),
                 password,
                 options: {
-                    data: { name: name.trim() },
+                    // Include common metadata keys used by Supabase profile triggers.
+                    data: {
+                        name: name.trim(),
+                        full_name: name.trim(),
+                        display_name: name.trim(),
+                    },
                     emailRedirectTo:
                         typeof window !== "undefined"
                             ? `${window.location.origin}/profile`
@@ -99,7 +114,17 @@ export default function LoginPage() {
             });
 
             if (error) {
-                throw new Error(error.message);
+                const message = error.message || "Authentication failed.";
+                const lowered = message.toLowerCase();
+                if (
+                    lowered.includes("unexpected_failure") ||
+                    lowered.includes("database error")
+                ) {
+                    throw new Error(
+                        "Signup failed in Supabase Auth (likely a DB trigger/constraint issue). Check your Supabase Auth logs and profile trigger function.",
+                    );
+                }
+                throw new Error(message);
             }
 
             const profileRes = await fetch("/api/profiles", {
@@ -121,7 +146,9 @@ export default function LoginPage() {
                     profileRes.status !== 409 &&
                     !String(msg).toLowerCase().includes("already exists")
                 ) {
-                    throw new Error(msg);
+                    setMessage(
+                        "Account created. We could not initialize profile settings yet, but you can sign in now.",
+                    );
                 }
             }
 
@@ -132,7 +159,7 @@ export default function LoginPage() {
             );
 
             if (data.session) {
-                router.replace("/profile");
+                router.replace(redirectPath);
             }
         } catch (err) {
             setAuthError(
@@ -192,7 +219,11 @@ export default function LoginPage() {
                     </button>
                 </div>
 
-                <form onSubmit={handleAuthSubmit} className="space-y-4">
+                <form
+                    onSubmit={handleAuthSubmit}
+                    className="space-y-4"
+                    autoComplete="on"
+                >
                     {mode === "signup" && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700">
@@ -203,6 +234,7 @@ export default function LoginPage() {
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Ada Lovelace"
+                                autoComplete="name"
                                 required={mode === "signup"}
                             />
                         </div>
@@ -218,6 +250,7 @@ export default function LoginPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="you@example.com"
+                            autoComplete="email"
                             required
                         />
                     </div>
@@ -232,6 +265,11 @@ export default function LoginPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="At least 6 characters"
+                            autoComplete={
+                                mode === "signup"
+                                    ? "new-password"
+                                    : "current-password"
+                            }
                             minLength={6}
                             required
                         />

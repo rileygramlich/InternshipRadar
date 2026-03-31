@@ -47,10 +47,9 @@ async function getCurrentUserEmail() {
             getAll() {
                 return cookieStore.getAll();
             },
-            setAll(cookiesToSet) {
-                cookiesToSet.forEach(({ name, value, options }) => {
-                    cookieStore.set(name, value, options);
-                });
+            setAll() {
+                // No-op in route handlers; reading the user does not require
+                // writing refreshed cookies here.
             },
         },
     });
