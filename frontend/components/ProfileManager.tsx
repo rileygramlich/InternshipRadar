@@ -278,10 +278,13 @@ export default function ProfileManager() {
                                             ).toLocaleString()}
                                         </p>
                                         <p className="text-sm text-gray-700 font-medium">
-                                            {(edits[profile.id]?.name || "").trim() || "Unnamed"}
+                                            {(
+                                                edits[profile.id]?.name || ""
+                                            ).trim() || "Unnamed"}
                                         </p>
                                         <p className="text-sm text-gray-500">
-                                            {edits[profile.id]?.email || "No email"}
+                                            {edits[profile.id]?.email ||
+                                                "No email"}
                                         </p>
                                     </div>
                                     <div className="space-x-2">
@@ -334,8 +337,7 @@ export default function ProfileManager() {
                                             className="mt-1 w-full rounded border-gray-300 shadow-sm text-sm"
                                             type="email"
                                             value={
-                                                edits[profile.id]?.email ??
-                                                ""
+                                                edits[profile.id]?.email ?? ""
                                             }
                                             onChange={(e) =>
                                                 setEdits((prev) => ({

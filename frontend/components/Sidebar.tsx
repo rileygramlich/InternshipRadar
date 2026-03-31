@@ -24,8 +24,8 @@ export default function Sidebar() {
             if (!active) return;
             setUserEmail(user?.email ?? null);
             const metadataName =
-                (user?.user_metadata as { full_name?: string } | null)?.
-                    full_name ?? null;
+                (user?.user_metadata as { full_name?: string } | null)
+                    ?.full_name ?? null;
             setUserName(metadataName || user?.email || null);
         }
 
