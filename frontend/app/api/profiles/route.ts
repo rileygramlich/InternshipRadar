@@ -23,10 +23,14 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const {
+            name,
+            email,
             discord_webhook_url,
             skills,
             location_preference,
         }: {
+            name?: string;
+            email?: string;
             discord_webhook_url?: string;
             skills?: string[];
             location_preference?: string;
@@ -37,6 +41,8 @@ export async function POST(req: NextRequest) {
         }
 
         const profile = await createProfile(
+            (name ?? "").trim(),
+            (email ?? "").trim(),
             discord_webhook_url ?? "",
             skills,
             location_preference ?? "",

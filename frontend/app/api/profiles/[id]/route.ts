@@ -29,6 +29,8 @@ export async function PUT(
 ) {
     try {
         const updates = (await req.json()) as {
+            name?: string;
+            email?: string;
             discord_webhook_url?: string;
             skills?: string[];
             location_preference?: string;

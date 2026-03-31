@@ -36,6 +36,8 @@ export async function listProfiles() {
 }
 
 export async function createProfile(
+    name: string,
+    email: string,
     discord_webhook_url: string,
     skills: string[],
     location_preference: string,
@@ -44,6 +46,8 @@ export async function createProfile(
         .from("profiles")
         .insert([
             {
+                name,
+                email,
                 discord_webhook_url,
                 skills,
                 location_preference,
@@ -69,6 +73,8 @@ export async function getProfile(profileId: string) {
 export async function updateProfile(
     profileId: string,
     updates: {
+        name?: string;
+        email?: string;
         discord_webhook_url?: string;
         skills?: string[];
         location_preference?: string;

@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 
 type Profile = {
     id: string;
+    name: string | null;
+    email: string | null;
     discord_webhook_url: string | null;
     skills: string[];
     location_preference: string | null;
@@ -12,6 +14,8 @@ type Profile = {
 };
 
 type EditableFields = {
+    name: string;
+    email: string;
     discord_webhook_url: string;
     skills: string;
     location_preference: string;
@@ -23,6 +27,8 @@ export default function ProfileManager() {
     const [creating, setCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const [newName, setNewName] = useState("");
+    const [newEmail, setNewEmail] = useState("");
     const [newWebhook, setNewWebhook] = useState("");
     const [newSkills, setNewSkills] = useState("");
     const [newLocation, setNewLocation] = useState("");
@@ -56,6 +62,8 @@ export default function ProfileManager() {
                 data.reduce(
                     (acc, profile) => {
                         acc[profile.id] = {
+                            name: profile.name ?? "",
+                            email: profile.email ?? "",
                             discord_webhook_url:
                                 profile.discord_webhook_url ?? "",
                             skills: (profile.skills || []).join(", "),
@@ -85,6 +93,8 @@ export default function ProfileManager() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
+                    name: newName,
+                    email: newEmail,
                     discord_webhook_url: newWebhook,
                     skills: skillsArray,
                     location_preference: newLocation,
@@ -93,6 +103,8 @@ export default function ProfileManager() {
             const json = await res.json();
             if (!res.ok)
                 throw new Error(json.error || "Failed to create profile");
+            setNewName("");
+            setNewEmail("");
             setNewWebhook("");
             setNewSkills("");
             setNewLocation("");
@@ -115,6 +127,8 @@ export default function ProfileManager() {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
+                    name: update.name,
+                    email: update.email,
                     discord_webhook_url: update.discord_webhook_url,
                     skills: update.skills
                         .split(",")
@@ -159,6 +173,33 @@ export default function ProfileManager() {
                     Create Profile
                 </h2>
                 <form onSubmit={handleCreate} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                                Name
+                            </label>
+                            <input
+                                className="mt-1 w-full rounded border-gray-300 shadow-sm"
+                                value={newName}
+                                onChange={(e) => setNewName(e.target.value)}
+                                placeholder="Ada Lovelace"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                                Email
+                            </label>
+                            <input
+                                className="mt-1 w-full rounded border-gray-300 shadow-sm"
+                                type="email"
+                                value={newEmail}
+                                onChange={(e) => setNewEmail(e.target.value)}
+                                placeholder="ada@example.com"
+                                required
+                            />
+                        </div>
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">
                             Discord Webhook URL
@@ -236,6 +277,12 @@ export default function ProfileManager() {
                                                 profile.created_at,
                                             ).toLocaleString()}
                                         </p>
+                                        <p className="text-sm text-gray-700 font-medium">
+                                            {(edits[profile.id]?.name || "").trim() || "Unnamed"}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            {edits[profile.id]?.email || "No email"}
+                                        </p>
                                     </div>
                                     <div className="space-x-2">
                                         <button
@@ -248,7 +295,69 @@ export default function ProfileManager() {
                                         </button>
                                     </div>
                                 </div>
-                                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Name
+                                        </label>
+                                        <input
+                                            className="mt-1 w-full rounded border-gray-300 shadow-sm text-sm"
+                                            value={
+                                                edits[profile.id]?.name ?? ""
+                                            }
+                                            onChange={(e) =>
+                                                setEdits((prev) => ({
+                                                    ...prev,
+                                                    [profile.id]: {
+                                                        ...(prev[
+                                                            profile.id
+                                                        ] || {
+                                                            name: "",
+                                                            email: "",
+                                                            discord_webhook_url:
+                                                                "",
+                                                            skills: "",
+                                                            location_preference:
+                                                                "",
+                                                        }),
+                                                        name: e.target.value,
+                                                    },
+                                                }))
+                                            }
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Email
+                                        </label>
+                                        <input
+                                            className="mt-1 w-full rounded border-gray-300 shadow-sm text-sm"
+                                            type="email"
+                                            value={
+                                                edits[profile.id]?.email ??
+                                                ""
+                                            }
+                                            onChange={(e) =>
+                                                setEdits((prev) => ({
+                                                    ...prev,
+                                                    [profile.id]: {
+                                                        ...(prev[
+                                                            profile.id
+                                                        ] || {
+                                                            name: "",
+                                                            email: "",
+                                                            discord_webhook_url:
+                                                                "",
+                                                            skills: "",
+                                                            location_preference:
+                                                                "",
+                                                        }),
+                                                        email: e.target.value,
+                                                    },
+                                                }))
+                                            }
+                                        />
+                                    </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">
                                             Webhook URL
@@ -266,6 +375,8 @@ export default function ProfileManager() {
                                                         ...(prev[
                                                             profile.id
                                                         ] || {
+                                                            name: "",
+                                                            email: "",
                                                             discord_webhook_url:
                                                                 "",
                                                             skills: "",
@@ -295,6 +406,8 @@ export default function ProfileManager() {
                                                         ...(prev[
                                                             profile.id
                                                         ] || {
+                                                            name: "",
+                                                            email: "",
                                                             discord_webhook_url:
                                                                 "",
                                                             skills: "",
@@ -324,6 +437,8 @@ export default function ProfileManager() {
                                                         ...(prev[
                                                             profile.id
                                                         ] || {
+                                                            name: "",
+                                                            email: "",
                                                             discord_webhook_url:
                                                                 "",
                                                             skills: "",
