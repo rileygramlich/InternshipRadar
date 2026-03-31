@@ -53,6 +53,9 @@ export default function ApplicationKanban() {
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [updatingIds, setUpdatingIds] = useState<Record<string, boolean>>({});
     const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
+    const [confirmDialog, setConfirmDialog] = useState<Application | null>(
+        null,
+    );
 
     const refresh = useCallback(async () => {
         setLoading(true);
@@ -168,39 +171,46 @@ export default function ApplicationKanban() {
             return;
         }
 
-        const shouldDelete = window.confirm(
-            "Are you sure you want to delete this job posting?",
-        );
+        // Open confirmation dialog
+        setConfirmDialog(application);
+    }
 
-        if (!shouldDelete) {
+    async function confirmDelete() {
+        if (!confirmDialog) return;
+
+        const applicationId = confirmDialog.id;
+        if (!applicationId) {
+            setError("Failed to delete application.");
+            setConfirmDialog(null);
             return;
         }
 
         setError(null);
-        setDeletingJobId(application.job_id);
+        setDeletingJobId(confirmDialog.job_id);
 
         try {
-            const res = await fetch(`/api/job-postings/${jobPostingId}`, {
+            const res = await fetch(`/api/applications/${applicationId}`, {
                 method: "DELETE",
             });
 
             const json = await res.json().catch(() => ({}));
             if (!res.ok) {
-                throw new Error(json.error || "Failed to delete job posting");
+                throw new Error(json.error || "Failed to delete application");
             }
 
-            // Remove all cards referencing the deleted posting.
+            // Remove only this application from the board.
             setApplications((prev) =>
-                prev.filter((item) => item.job_id !== application.job_id),
+                prev.filter((item) => item.id !== applicationId),
             );
         } catch (err) {
             setError(
                 err instanceof Error
                     ? err.message
-                    : "Failed to delete job posting",
+                    : "Failed to delete application",
             );
         } finally {
             setDeletingJobId(null);
+            setConfirmDialog(null);
         }
     }
 
@@ -307,43 +317,17 @@ export default function ApplicationKanban() {
                                                 }
                                             </p>
                                         )}
-                                        {(application.job_postings?.url ||
-                                            application.job_postings?.id) && (
-                                            <div className="mt-1 flex items-center gap-3">
-                                                {application.job_postings
-                                                    ?.url && (
-                                                    <a
-                                                        href={
-                                                            application
-                                                                .job_postings
-                                                                .url
-                                                        }
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="text-xs text-indigo-600 hover:text-indigo-700 break-all"
-                                                    >
-                                                        View Posting
-                                                    </a>
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        handleDeleteJobPosting(
-                                                            application,
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        deletingJobId ===
-                                                        application.job_id
-                                                    }
-                                                    className="text-xs text-red-600 hover:text-red-700 disabled:opacity-50"
-                                                >
-                                                    {deletingJobId ===
-                                                    application.job_id
-                                                        ? "Deleting..."
-                                                        : "Delete Posting"}
-                                                </button>
-                                            </div>
+                                        {application.job_postings?.url && (
+                                            <a
+                                                href={
+                                                    application.job_postings.url
+                                                }
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-xs text-indigo-600 hover:text-indigo-700 break-all"
+                                            >
+                                                View Posting
+                                            </a>
                                         )}
                                         <p className="text-xs text-gray-600 mt-1 break-all">
                                             Profile: {application.profile_id}
@@ -364,13 +348,25 @@ export default function ApplicationKanban() {
                                             <select
                                                 className="w-full rounded border-gray-300 text-xs"
                                                 value={application.status}
-                                                onChange={(event) =>
-                                                    updateStatus(
-                                                        application.id,
-                                                        event.target
-                                                            .value as ApplicationStatus,
-                                                    )
-                                                }
+                                                onChange={(event) => {
+                                                    if (
+                                                        event.target.value ===
+                                                        "delete"
+                                                    ) {
+                                                        handleDeleteJobPosting(
+                                                            application,
+                                                        );
+                                                        // Reset the select to its original status
+                                                        event.target.value =
+                                                            application.status;
+                                                    } else {
+                                                        updateStatus(
+                                                            application.id,
+                                                            event.target
+                                                                .value as ApplicationStatus,
+                                                        );
+                                                    }
+                                                }}
                                                 disabled={Boolean(
                                                     updatingIds[application.id],
                                                 )}
@@ -383,6 +379,12 @@ export default function ApplicationKanban() {
                                                         {statusOption.label}
                                                     </option>
                                                 ))}
+                                                <option
+                                                    value="delete"
+                                                    className="text-red-600"
+                                                >
+                                                    Remove Posting
+                                                </option>
                                             </select>
                                         </div>
                                     </div>
@@ -392,6 +394,54 @@ export default function ApplicationKanban() {
                     </div>
                 ))}
             </div>
+
+            {/* Confirmation Dialog */}
+            {confirmDialog && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-lg max-w-sm w-full mx-4">
+                        <div className="border-b border-gray-200 px-6 py-4">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                                Remove Job Posting
+                            </h3>
+                        </div>
+                        <div className="px-6 py-4 space-y-4">
+                            <p className="text-gray-700">
+                                Are you sure you want to delete this job
+                                posting?
+                            </p>
+                            <p className="text-sm text-gray-600">
+                                <span className="font-medium">
+                                    {confirmDialog.job_postings?.company}
+                                </span>
+                                {" - "}
+                                <span>{confirmDialog.job_postings?.title}</span>
+                            </p>
+                            <p className="text-xs text-red-600">
+                                This action cannot be undone.
+                            </p>
+                        </div>
+                        <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
+                            <button
+                                onClick={confirmDelete}
+                                disabled={
+                                    deletingJobId === confirmDialog.job_id
+                                }
+                                className="px-4 py-2 rounded bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                            >
+                                {deletingJobId === confirmDialog.job_id
+                                    ? "Removing..."
+                                    : "Remove"}
+                            </button>
+                            <button
+                                onClick={() => setConfirmDialog(null)}
+                                className="px-4 py-2 rounded border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
