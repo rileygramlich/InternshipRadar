@@ -8,7 +8,7 @@ export default function ProfilePage() {
                     Settings
                 </h1>
                 <p className="text-gray-600 text-lg">
-                    Manage profiles through API-backed controllers.
+                    Edit profile settings and preferences.
                 </p>
             </div>
             <ProfileManager />
