@@ -96,7 +96,7 @@ export default function JobManager() {
                     const applications = Array.isArray(applicationsJson.data)
                         ? applicationsJson.data
                         : [];
-                    const jobIds = new Set(
+                    const jobIds = new Set<string>(
                         applications.map(
                             (app: { job_id: string }) => app.job_id,
                         ),

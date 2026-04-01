@@ -2,14 +2,13 @@
 
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
     const supabase = useMemo(() => createClient(), []);
     const router = useRouter();
-    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -18,15 +17,31 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [authError, setAuthError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
-
-    const redirectPath = searchParams.get("redirect") || "/profile";
+    const [oauthSubmitting, setOauthSubmitting] = useState(false);
+    const [redirectPath, setRedirectPath] = useState("/profile");
 
     useEffect(() => {
-        const requestedMode = searchParams.get("mode");
+        const params = new URLSearchParams(window.location.search);
+
+        const requestedMode = params.get("mode");
         if (requestedMode === "signup" || requestedMode === "signin") {
             setMode(requestedMode);
         }
-    }, [searchParams]);
+
+        const callbackError = params.get("auth_error");
+        if (callbackError) {
+            setAuthError(callbackError);
+        }
+
+        const requestedRedirect = params.get("redirect");
+        if (
+            requestedRedirect &&
+            requestedRedirect.startsWith("/") &&
+            !requestedRedirect.startsWith("//")
+        ) {
+            setRedirectPath(requestedRedirect);
+        }
+    }, []);
 
     useEffect(() => {
         let active = true;
@@ -62,6 +77,43 @@ export default function LoginPage() {
                 Checking session...
             </div>
         );
+    }
+
+    async function handleGoogleAuth() {
+        setAuthError(null);
+        setMessage(null);
+        setOauthSubmitting(true);
+
+        try {
+            const callbackUrl =
+                typeof window !== "undefined"
+                    ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+                          redirectPath,
+                      )}`
+                    : undefined;
+
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: "google",
+                options: {
+                    redirectTo: callbackUrl,
+                    queryParams: {
+                        access_type: "offline",
+                        prompt: "consent",
+                    },
+                },
+            });
+
+            if (error) {
+                throw new Error(error.message || "Google sign-in failed.");
+            }
+        } catch (err) {
+            setAuthError(
+                err instanceof Error
+                    ? err.message
+                    : "Google sign-in could not be started.",
+            );
+            setOauthSubmitting(false);
+        }
     }
 
     async function handleAuthSubmit(e: FormEvent) {
@@ -224,6 +276,25 @@ export default function LoginPage() {
                     className="space-y-4"
                     autoComplete="on"
                 >
+                    <button
+                        type="button"
+                        onClick={handleGoogleAuth}
+                        disabled={oauthSubmitting || submitting}
+                        className="w-full rounded border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                    >
+                        {oauthSubmitting
+                            ? "Redirecting to Google..."
+                            : "Sign in with Google"}
+                    </button>
+
+                    <div className="flex items-center gap-3">
+                        <div className="h-px flex-1 bg-gray-200" />
+                        <span className="text-xs uppercase tracking-wide text-gray-400">
+                            or
+                        </span>
+                        <div className="h-px flex-1 bg-gray-200" />
+                    </div>
+
                     {mode === "signup" && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700">
