@@ -3,7 +3,7 @@
 Clone the repo and run the Next.js app locally.
 
 ```bash
-git clone https://github.com/<your-org>/InternshipRadar.git
+git clone https://github.com/rileygramlich/InternshipRadar.git
 cd InternshipRadar/frontend
 npm install
 npm run dev
