@@ -57,7 +57,7 @@ export default function Sidebar() {
 
     const navItems = [
         { href: "/radar", label: "Discovery", icon: "📡" },
-        { href: "/tracker", label: "Kanban", icon: "📋" },
+        { href: "/tracker", label: "Applications", icon: "📋" },
         { href: "/profile", label: "Settings", icon: "⚙️" },
     ];
 

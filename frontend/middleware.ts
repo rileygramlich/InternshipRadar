@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-const protectedPaths = ["/tracker", "/profile"];
+const protectedPaths = ["/tracker", "/profile", "/radar"];
 
 export async function middleware(request: NextRequest) {
     const response = NextResponse.next({
@@ -37,10 +37,26 @@ export async function middleware(request: NextRequest) {
     const isProtected = protectedPaths.some((path) =>
         request.nextUrl.pathname.startsWith(path),
     );
+    const isLoginPage = request.nextUrl.pathname === "/login";
 
     if (!session && isProtected) {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = "/login";
+        const redirectTarget = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+        redirectUrl.search = "";
+        redirectUrl.searchParams.set("redirect", redirectTarget);
+        return NextResponse.redirect(redirectUrl);
+    }
+
+    if (session && isLoginPage) {
+        const redirectParam = request.nextUrl.searchParams.get("redirect");
+        const destination =
+            redirectParam && redirectParam.startsWith("/")
+                ? redirectParam
+                : "/profile";
+
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = destination;
         redirectUrl.search = "";
         return NextResponse.redirect(redirectUrl);
     }
@@ -49,5 +65,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/tracker/:path*", "/profile/:path*"],
+    matcher: ["/tracker/:path*", "/profile/:path*", "/radar/:path*", "/login"],
 };

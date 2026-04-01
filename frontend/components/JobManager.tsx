@@ -34,6 +34,7 @@ export default function JobManager() {
     const [quickApplyStatus, setQuickApplyStatus] =
         useState<ApplicationStatus>("saved");
     const [addingForJobId, setAddingForJobId] = useState<string | null>(null);
+    const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         refresh();
@@ -58,8 +59,6 @@ export default function JobManager() {
                 ? jobsJson.data
                 : [];
 
-            setJobs(jobsArray);
-
             const {
                 data: { session },
             } = await supabase.auth.getSession();
@@ -69,6 +68,8 @@ export default function JobManager() {
 
             if (!loggedIn) {
                 setProfileId("");
+                setJobs(jobsArray);
+                setSavedJobIds(new Set());
                 return;
             }
 
@@ -77,11 +78,34 @@ export default function JobManager() {
             });
             const profileJson = await profileRes.json().catch(() => ({}));
 
+            let pId = "";
             if (profileRes.ok) {
-                setProfileId(profileJson.data?.id ?? "");
+                pId = profileJson.data?.id ?? "";
+                setProfileId(pId);
             } else {
                 setProfileId("");
             }
+
+            // Fetch user's applications to filter out saved jobs
+            if (pId) {
+                const applicationsRes = await fetch("/api/applications", {
+                    cache: "no-store",
+                });
+                const applicationsJson = await applicationsRes.json();
+                if (applicationsRes.ok) {
+                    const applications = Array.isArray(applicationsJson.data)
+                        ? applicationsJson.data
+                        : [];
+                    const jobIds = new Set<string>(
+                        applications.map(
+                            (app: { job_id: string }) => app.job_id,
+                        ),
+                    );
+                    setSavedJobIds(jobIds);
+                }
+            }
+
+            setJobs(jobsArray);
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "Failed to load jobs",
@@ -193,57 +217,66 @@ export default function JobManager() {
                     <p className="text-gray-500">No job postings yet.</p>
                 ) : (
                     <div className="space-y-4">
-                        {jobs.map((job) => (
-                            <div
-                                key={job.id}
-                                className="p-4 border border-gray-200 rounded-md"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-base text-gray-900 font-semibold">
-                                            {job.company}
-                                        </p>
-                                        <p className="text-sm text-gray-700">
-                                            {job.title}
-                                        </p>
-                                        <p className="text-sm text-gray-500">
-                                            Created:{" "}
-                                            {new Date(
-                                                job.created_at,
-                                            ).toLocaleString()}
-                                        </p>
+                        {jobs
+                            .filter((job) => !savedJobIds.has(job.id))
+                            .map((job) => (
+                                <div
+                                    key={job.id}
+                                    className="p-4 border border-gray-200 rounded-md"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-base text-gray-900 font-semibold">
+                                                {job.company}
+                                            </p>
+                                            <p className="text-sm text-gray-700">
+                                                {job.title}
+                                            </p>
+                                            <p className="text-sm text-gray-500">
+                                                Created:{" "}
+                                                {new Date(
+                                                    job.created_at,
+                                                ).toLocaleString()}
+                                            </p>
+                                        </div>
+                                        {job.url && (
+                                            <a
+                                                href={job.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-sm text-indigo-600 hover:text-indigo-700"
+                                            >
+                                                View Job
+                                            </a>
+                                        )}
                                     </div>
-                                    {job.url && (
-                                        <a
-                                            href={job.url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="text-sm text-indigo-600 hover:text-indigo-700"
-                                        >
-                                            View Job
-                                        </a>
+                                    {job.description && (
+                                        <p className="mt-3 text-sm text-gray-700 whitespace-pre-line">
+                                            {job.description}
+                                        </p>
                                     )}
+                                    <div className="mt-3 flex justify-end">
+                                        <button
+                                            onClick={() =>
+                                                handleAddToApplications(job)
+                                            }
+                                            className="mr-2 px-3 py-1.5 rounded bg-emerald-600 text-white text-sm hover:bg-emerald-700 disabled:opacity-50"
+                                            disabled={addingForJobId === job.id}
+                                        >
+                                            {addingForJobId === job.id
+                                                ? "Adding..."
+                                                : "Save Application"}
+                                        </button>
+                                    </div>
                                 </div>
-                                {job.description && (
-                                    <p className="mt-3 text-sm text-gray-700 whitespace-pre-line">
-                                        {job.description}
-                                    </p>
-                                )}
-                                <div className="mt-3 flex justify-end">
-                                    <button
-                                        onClick={() =>
-                                            handleAddToApplications(job)
-                                        }
-                                        className="mr-2 px-3 py-1.5 rounded bg-emerald-600 text-white text-sm hover:bg-emerald-700 disabled:opacity-50"
-                                        disabled={addingForJobId === job.id}
-                                    >
-                                        {addingForJobId === job.id
-                                            ? "Adding..."
-                                            : "Save Application"}
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        {jobs.filter((job) => !savedJobIds.has(job.id))
+                            .length === 0 && (
+                            <p className="text-gray-500">
+                                You have already saved all available job
+                                postings.
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
