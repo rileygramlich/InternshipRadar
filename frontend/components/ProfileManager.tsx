@@ -18,7 +18,26 @@ type EditableFields = {
     discord_webhook_url: string;
     skills: string;
     location_preference: string;
+    experience_level: string;
 };
+
+async function parseApiResponse(res: Response) {
+    const text = await res.text();
+
+    if (!text.trim()) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(text) as Record<string, unknown>;
+    } catch {
+        throw new Error(
+            res.ok
+                ? "Server returned invalid JSON."
+                : `Request failed (${res.status}): ${text.slice(0, 240)}`,
+        );
+    }
+}
 
 export default function ProfileManager() {
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -26,6 +45,8 @@ export default function ProfileManager() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [resumeParsing, setResumeParsing] = useState(false);
+    const [resumeError, setResumeError] = useState<string | null>(null);
 
     const [edits, setEdits] = useState<EditableFields | null>(null);
 
@@ -39,10 +60,16 @@ export default function ProfileManager() {
         setSuccess(null);
         try {
             const res = await fetch("/api/profiles/me", { cache: "no-store" });
-            const json = await res.json();
+            const json = (await parseApiResponse(res)) as {
+                error?: string;
+                data?: Profile;
+            } | null;
             if (!res.ok)
-                throw new Error(json.error || "Failed to load profile");
-            const data: Profile = json.data;
+                throw new Error(json?.error || "Failed to load profile");
+            const data = json?.data;
+            if (!data) {
+                throw new Error("Profile response is missing data.");
+            }
             setProfile(data);
             setEdits({
                 name: data.name ?? "",
@@ -50,6 +77,7 @@ export default function ProfileManager() {
                 discord_webhook_url: data.discord_webhook_url ?? "",
                 skills: (data.skills || []).join(", "),
                 location_preference: data.location_preference ?? "",
+                experience_level: "",
             });
         } catch (err) {
             setError(
@@ -59,6 +87,54 @@ export default function ProfileManager() {
             setEdits(null);
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function handleResumeUpload(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setResumeParsing(true);
+        setResumeError(null);
+        try {
+            const formData = new FormData();
+            formData.append("resume", file);
+
+            const res = await fetch("/api/parse-resume", {
+                method: "POST",
+                body: formData,
+            });
+            const json = (await parseApiResponse(res)) as {
+                error?: string;
+                skills?: string[];
+                location_preference?: string;
+                experience_level?: string;
+            } | null;
+            if (!res.ok)
+                throw new Error(json?.error || "Failed to parse resume");
+
+            setEdits((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          skills: Array.isArray(json.skills)
+                              ? json.skills.join(", ")
+                              : prev.skills,
+                          location_preference:
+                              json.location_preference ||
+                              prev.location_preference,
+                          experience_level:
+                              json.experience_level || prev.experience_level,
+                      }
+                    : prev,
+            );
+        } catch (err) {
+            setResumeError(
+                err instanceof Error ? err.message : "Failed to parse resume",
+            );
+        } finally {
+            setResumeParsing(false);
+            e.target.value = "";
         }
     }
 
@@ -87,9 +163,11 @@ export default function ProfileManager() {
                     location_preference: update.location_preference,
                 }),
             });
-            const json = await res.json();
+            const json = (await parseApiResponse(res)) as {
+                error?: string;
+            } | null;
             if (!res.ok)
-                throw new Error(json.error || "Failed to update profile");
+                throw new Error(json?.error || "Failed to update profile");
             setSuccess("Profile settings updated.");
             await refresh();
         } catch (err) {
@@ -103,6 +181,35 @@ export default function ProfileManager() {
 
     return (
         <div className="space-y-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h2 className="text-xl font-semibold text-gray-900 mb-3">
+                    Import from Resume
+                </h2>
+                <p className="text-sm text-gray-500 mb-3">
+                    Upload your PDF resume to automatically fill in your skills,
+                    location preference, and experience level.
+                </p>
+                {resumeError && (
+                    <p className="text-sm text-red-600 mb-3">{resumeError}</p>
+                )}
+                <label className="flex items-center gap-3 cursor-pointer">
+                    <span className="px-4 py-2 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-700 disabled:opacity-60">
+                        {resumeParsing ? "Parsing…" : "Upload PDF Resume"}
+                    </span>
+                    <input
+                        type="file"
+                        accept="application/pdf"
+                        className="sr-only"
+                        disabled={resumeParsing}
+                        onChange={handleResumeUpload}
+                    />
+                    {resumeParsing && (
+                        <span className="text-sm text-gray-500">
+                            Extracting data from your resume…
+                        </span>
+                    )}
+                </label>
+            </div>
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold text-gray-900">
@@ -235,6 +342,27 @@ export default function ProfileManager() {
                                                 : prev,
                                         )
                                     }
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Experience Level
+                                </label>
+                                <input
+                                    className="mt-1 w-full rounded border-gray-300 shadow-sm text-sm"
+                                    value={edits.experience_level}
+                                    onChange={(e) =>
+                                        setEdits((prev) =>
+                                            prev
+                                                ? {
+                                                      ...prev,
+                                                      experience_level:
+                                                          e.target.value,
+                                                  }
+                                                : prev,
+                                        )
+                                    }
+                                    placeholder="e.g. Internship, Entry Level"
                                 />
                             </div>
                         </div>
