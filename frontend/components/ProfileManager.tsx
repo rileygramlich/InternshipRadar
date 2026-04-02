@@ -21,6 +21,24 @@ type EditableFields = {
     experience_level: string;
 };
 
+async function parseApiResponse(res: Response) {
+    const text = await res.text();
+
+    if (!text.trim()) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(text) as Record<string, unknown>;
+    } catch {
+        throw new Error(
+            res.ok
+                ? "Server returned invalid JSON."
+                : `Request failed (${res.status}): ${text.slice(0, 240)}`,
+        );
+    }
+}
+
 export default function ProfileManager() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(false);
@@ -42,10 +60,16 @@ export default function ProfileManager() {
         setSuccess(null);
         try {
             const res = await fetch("/api/profiles/me", { cache: "no-store" });
-            const json = await res.json();
+            const json = (await parseApiResponse(res)) as {
+                error?: string;
+                data?: Profile;
+            } | null;
             if (!res.ok)
-                throw new Error(json.error || "Failed to load profile");
-            const data: Profile = json.data;
+                throw new Error(json?.error || "Failed to load profile");
+            const data = json?.data;
+            if (!data) {
+                throw new Error("Profile response is missing data.");
+            }
             setProfile(data);
             setEdits({
                 name: data.name ?? "",
@@ -66,9 +90,7 @@ export default function ProfileManager() {
         }
     }
 
-    async function handleResumeUpload(
-        e: React.ChangeEvent<HTMLInputElement>,
-    ) {
+    async function handleResumeUpload(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -82,9 +104,14 @@ export default function ProfileManager() {
                 method: "POST",
                 body: formData,
             });
-            const json = await res.json();
+            const json = (await parseApiResponse(res)) as {
+                error?: string;
+                skills?: string[];
+                location_preference?: string;
+                experience_level?: string;
+            } | null;
             if (!res.ok)
-                throw new Error(json.error || "Failed to parse resume");
+                throw new Error(json?.error || "Failed to parse resume");
 
             setEdits((prev) =>
                 prev
@@ -94,7 +121,8 @@ export default function ProfileManager() {
                               ? json.skills.join(", ")
                               : prev.skills,
                           location_preference:
-                              json.location_preference || prev.location_preference,
+                              json.location_preference ||
+                              prev.location_preference,
                           experience_level:
                               json.experience_level || prev.experience_level,
                       }
@@ -135,9 +163,11 @@ export default function ProfileManager() {
                     location_preference: update.location_preference,
                 }),
             });
-            const json = await res.json();
+            const json = (await parseApiResponse(res)) as {
+                error?: string;
+            } | null;
             if (!res.ok)
-                throw new Error(json.error || "Failed to update profile");
+                throw new Error(json?.error || "Failed to update profile");
             setSuccess("Profile settings updated.");
             await refresh();
         } catch (err) {
