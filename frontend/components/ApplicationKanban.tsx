@@ -2,6 +2,7 @@
 
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { SkillGapIndicator } from "@/components/SkillPill";
 
 type ApplicationStatus =
     | "saved"
@@ -23,6 +24,7 @@ type Application = {
         title: string;
         url: string | null;
         description: string | null;
+        tech_tags: string[] | null;
         created_at?: string;
     } | null;
 };
@@ -49,6 +51,7 @@ export default function ApplicationKanban() {
     const [applications, setApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [profileSkills, setProfileSkills] = useState<string[]>([]);
 
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [updatingIds, setUpdatingIds] = useState<Record<string, boolean>>({});
@@ -72,6 +75,26 @@ export default function ApplicationKanban() {
                 ? json.data
                 : [];
             setApplications(apps);
+
+            // Fetch user's profile to get their skills
+            try {
+                const profileRes = await fetch("/api/profiles/me", {
+                    cache: "no-store",
+                });
+                const profileJson = await profileRes.json().catch(() => ({}));
+
+                if (profileRes.ok && profileJson.data?.skills) {
+                    setProfileSkills(
+                        Array.isArray(profileJson.data.skills)
+                            ? profileJson.data.skills
+                            : [],
+                    );
+                } else {
+                    setProfileSkills([]);
+                }
+            } catch {
+                setProfileSkills([]);
+            }
         } catch (err) {
             setError(
                 err instanceof Error
@@ -371,6 +394,19 @@ export default function ApplicationKanban() {
                                                 }
                                             </p>
                                         )}
+                                        {application.job_postings?.tech_tags &&
+                                            application.job_postings.tech_tags
+                                                .length > 0 && (
+                                                <SkillGapIndicator
+                                                    techTags={
+                                                        application.job_postings
+                                                            .tech_tags
+                                                    }
+                                                    profileSkills={
+                                                        profileSkills
+                                                    }
+                                                />
+                                            )}
                                         {application.job_postings?.url && (
                                             <a
                                                 href={
