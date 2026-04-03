@@ -319,6 +319,7 @@ export async function listApplications(filters?: {
                 title,
                 url,
                 description,
+                tech_tags,
                 created_at
             )
         `,
