@@ -106,6 +106,19 @@ export default function ApplicationKanban() {
         }));
     }, [applications]);
 
+    const analytics = useMemo(() => {
+        const counts = Object.fromEntries(
+            columns.map((col) => [col.key, col.items.length]),
+        ) as Record<ApplicationStatus, number>;
+
+        const applied = counts.applied;
+        const interviews = counts.interview;
+        const conversionRate =
+            applied > 0 ? Math.round((interviews / applied) * 100) : 0;
+
+        return { counts, conversionRate };
+    }, [columns]);
+
     async function updateStatus(
         applicationId: string,
         nextStatus: ApplicationStatus,
@@ -248,6 +261,28 @@ export default function ApplicationKanban() {
                 >
                     {loading ? "Refreshing..." : "Refresh"}
                 </button>
+            </div>
+
+            {/* Analytics summary bar */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-indigo-50 border border-indigo-100 px-4 py-3 text-sm text-gray-700">
+                {COLUMNS.map((col, index) => (
+                    <span key={col.key} className="flex items-center gap-1">
+                        {index !== 0 && (
+                            <span className="text-gray-300 select-none">|</span>
+                        )}
+                        <span className="font-semibold text-gray-900">
+                            {analytics.counts[col.key]}
+                        </span>{" "}
+                        {col.label}
+                    </span>
+                ))}
+                <span className="text-gray-300 select-none">|</span>
+                <span className="flex items-center gap-1">
+                    <span className="font-semibold text-indigo-700">
+                        {analytics.conversionRate}%
+                    </span>{" "}
+                    Applied → Interview
+                </span>
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}
