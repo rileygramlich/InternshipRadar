@@ -115,8 +115,10 @@ export default function ApplicationKanban() {
         const interviews = counts.interview;
         const conversionRate =
             applied > 0 ? Math.round((interviews / applied) * 100) : 0;
+        const rejectionRate =
+            applied > 0 ? Math.round((counts.rejected / applied) * 100) : 0;
 
-        return { counts, conversionRate };
+        return { counts, conversionRate, rejectionRate };
     }, [columns]);
 
     async function updateStatus(
@@ -286,6 +288,15 @@ export default function ApplicationKanban() {
                         {analytics.conversionRate}%
                     </span>{" "}
                     Applied → Interview
+                </span>
+                <span className="text-gray-300 dark:text-gray-600 select-none">
+                    |
+                </span>
+                <span className="flex items-center gap-1">
+                    <span className="font-semibold text-rose-700 dark:text-rose-400">
+                        {analytics.rejectionRate}%
+                    </span>{" "}
+                    Rejection Rate
                 </span>
             </div>
 
