@@ -106,6 +106,21 @@ export default function ApplicationKanban() {
         }));
     }, [applications]);
 
+    const analytics = useMemo(() => {
+        const counts = Object.fromEntries(
+            columns.map((col) => [col.key, col.items.length]),
+        ) as Record<ApplicationStatus, number>;
+
+        const applied = counts.applied;
+        const interviews = counts.interview;
+        const conversionRate =
+            applied > 0 ? Math.round((interviews / applied) * 100) : 0;
+        const rejectionRate =
+            applied > 0 ? Math.round((counts.rejected / applied) * 100) : 0;
+
+        return { counts, conversionRate, rejectionRate };
+    }, [columns]);
+
     async function updateStatus(
         applicationId: string,
         nextStatus: ApplicationStatus,
@@ -233,24 +248,63 @@ export default function ApplicationKanban() {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-semibold text-gray-900">
+                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
                         Applications
                     </h2>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         Drag cards between columns to change status. Changes
                         sync instantly to Supabase.
                     </p>
                 </div>
                 <button
                     onClick={refresh}
-                    className="text-sm text-indigo-600 hover:text-indigo-700"
+                    className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
                     disabled={loading}
                 >
                     {loading ? "Refreshing..." : "Refresh"}
                 </button>
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {/* Analytics summary bar */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-indigo-50 dark:bg-indigo-900 border border-indigo-100 dark:border-indigo-700 px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
+                {COLUMNS.map((col, index) => (
+                    <span key={col.key} className="flex items-center gap-1">
+                        {index !== 0 && (
+                            <span className="text-gray-300 dark:text-gray-600 select-none">
+                                |
+                            </span>
+                        )}
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                            {analytics.counts[col.key]}
+                        </span>{" "}
+                        {col.label}
+                    </span>
+                ))}
+                <span className="text-gray-300 dark:text-gray-600 select-none">
+                    |
+                </span>
+                <span className="flex items-center gap-1">
+                    <span className="font-semibold text-indigo-700 dark:text-indigo-400">
+                        {analytics.conversionRate}%
+                    </span>{" "}
+                    Applied → Interview
+                </span>
+                <span className="text-gray-300 dark:text-gray-600 select-none">
+                    |
+                </span>
+                <span className="flex items-center gap-1">
+                    <span className="font-semibold text-rose-700 dark:text-rose-400">
+                        {analytics.rejectionRate}%
+                    </span>{" "}
+                    Rejection Rate
+                </span>
+            </div>
+
+            {error && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                    {error}
+                </p>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
                 {columns.map((column) => (
@@ -258,20 +312,20 @@ export default function ApplicationKanban() {
                         key={column.key}
                         onDragOver={(event) => event.preventDefault()}
                         onDrop={onDropToColumn(column.key)}
-                        className="bg-gray-50 border border-gray-200 rounded-lg p-3 min-h-52"
+                        className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 min-h-52"
                     >
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-semibold text-gray-800">
+                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                                 {column.label}
                             </h3>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                                 {column.items.length}
                             </span>
                         </div>
 
                         <div className="space-y-3">
                             {column.items.length === 0 ? (
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-gray-400 dark:text-gray-500">
                                     Drop applications here
                                 </p>
                             ) : (
@@ -290,27 +344,27 @@ export default function ApplicationKanban() {
                                         }}
                                         onDragEnd={() => setDraggingId(null)}
                                         className={[
-                                            "rounded-md border bg-white p-3 shadow-sm cursor-grab active:cursor-grabbing",
+                                            "rounded-md border bg-white dark:bg-gray-900 p-3 shadow-sm cursor-grab active:cursor-grabbing",
                                             column.accentClass,
                                             updatingIds[application.id]
                                                 ? "opacity-60"
                                                 : "opacity-100",
                                         ].join(" ")}
                                     >
-                                        <p className="text-xs text-gray-500 break-all">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 break-all">
                                             {application.id}
                                         </p>
-                                        <p className="text-sm font-semibold text-gray-900 mt-1 break-words">
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1 break-words">
                                             {application.job_postings
                                                 ?.company || "Unknown Company"}
                                         </p>
-                                        <p className="text-xs text-gray-700 break-words">
+                                        <p className="text-xs text-gray-700 dark:text-gray-300 break-words">
                                             {application.job_postings?.title ||
                                                 "Unknown Job Title"}
                                         </p>
                                         {application.job_postings
                                             ?.description && (
-                                            <p className="text-xs text-gray-600 mt-1 line-clamp-3">
+                                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-3">
                                                 {
                                                     application.job_postings
                                                         .description
@@ -324,21 +378,21 @@ export default function ApplicationKanban() {
                                                 }
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="text-xs text-indigo-600 hover:text-indigo-700 break-all"
+                                                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 break-all"
                                             >
                                                 View Posting
                                             </a>
                                         )}
-                                        <p className="text-xs text-gray-600 mt-1 break-all">
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 break-all">
                                             Profile: {application.profile_id}
                                         </p>
-                                        <p className="text-xs text-gray-600 break-all">
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 break-all">
                                             Job ID: {application.job_id}
                                         </p>
-                                        <p className="text-xs text-gray-600 mt-1">
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                                             Match: {application.match_score}
                                         </p>
-                                        <p className="text-xs text-gray-500 mt-1">
+                                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                                             {new Date(
                                                 application.created_at,
                                             ).toLocaleDateString()}
@@ -346,7 +400,7 @@ export default function ApplicationKanban() {
 
                                         <div className="mt-2">
                                             <select
-                                                className="w-full rounded border-gray-300 text-xs"
+                                                className="w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 text-xs"
                                                 value={application.status}
                                                 onChange={(event) => {
                                                     if (
@@ -398,29 +452,29 @@ export default function ApplicationKanban() {
             {/* Confirmation Dialog */}
             {confirmDialog && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg max-w-sm w-full mx-4">
-                        <div className="border-b border-gray-200 px-6 py-4">
-                            <h3 className="text-lg font-semibold text-gray-900">
+                    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg max-w-sm w-full mx-4">
+                        <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                                 Remove Job Posting
                             </h3>
                         </div>
                         <div className="px-6 py-4 space-y-4">
-                            <p className="text-gray-700">
+                            <p className="text-gray-700 dark:text-gray-300">
                                 Are you sure you want to delete this job
                                 posting?
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
                                 <span className="font-medium">
                                     {confirmDialog.job_postings?.company}
                                 </span>
                                 {" - "}
                                 <span>{confirmDialog.job_postings?.title}</span>
                             </p>
-                            <p className="text-xs text-red-600">
+                            <p className="text-xs text-red-600 dark:text-red-400">
                                 This action cannot be undone.
                             </p>
                         </div>
-                        <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
+                        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-end gap-3">
                             <button
                                 onClick={confirmDelete}
                                 disabled={
@@ -434,7 +488,7 @@ export default function ApplicationKanban() {
                             </button>
                             <button
                                 onClick={() => setConfirmDialog(null)}
-                                className="px-4 py-2 rounded border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50"
+                                className="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
                             >
                                 Cancel
                             </button>

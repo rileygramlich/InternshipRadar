@@ -174,39 +174,39 @@ export default function JobManager() {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                         Jobs
                     </h2>
                     <button
                         onClick={refresh}
-                        className="text-sm text-indigo-600 hover:text-indigo-700"
+                        className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
                         disabled={loading}
                     >
                         {loading ? "Refreshing..." : "Refresh"}
                     </button>
                 </div>
-                {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+                {error && <p className="text-sm text-red-600 dark:text-red-400 mb-3">{error}</p>}
                 {actionMessage && (
-                    <p className="text-sm text-emerald-600 mb-3">
+                    <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-3">
                         {actionMessage}
                     </p>
                 )}
 
                 {!isAuthenticated && (
-                    <p className="text-sm text-gray-600 mb-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                         You can browse all jobs. Saving an application will
                         redirect you to sign up.
                     </p>
                 )}
 
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Default Application Status
                     </label>
                     <select
-                        className="mt-1 w-full md:w-72 rounded border-gray-300 shadow-sm text-sm"
+                        className="mt-1 w-full md:w-72 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 shadow-sm text-sm"
                         value={quickApplyStatus}
                         onChange={(e) =>
                             setQuickApplyStatus(
@@ -223,7 +223,7 @@ export default function JobManager() {
                 </div>
 
                 {jobs.length === 0 ? (
-                    <p className="text-gray-500">No job postings yet.</p>
+                    <p className="text-gray-500 dark:text-gray-400">No job postings yet.</p>
                 ) : (
                     <div className="space-y-4">
                         {jobs
@@ -231,17 +231,17 @@ export default function JobManager() {
                             .map((job) => (
                                 <div
                                     key={job.id}
-                                    className="p-4 border border-gray-200 rounded-md"
+                                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-md"
                                 >
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-base text-gray-900 font-semibold">
+                                            <p className="text-base text-gray-900 dark:text-white font-semibold">
                                                 {job.company}
                                             </p>
-                                            <p className="text-sm text-gray-700">
+                                            <p className="text-sm text-gray-700 dark:text-gray-300">
                                                 {job.title}
                                             </p>
-                                            <p className="text-sm text-gray-500">
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">
                                                 Created:{" "}
                                                 {new Date(
                                                     job.created_at,
@@ -253,14 +253,14 @@ export default function JobManager() {
                                                 href={job.url}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="text-sm text-indigo-600 hover:text-indigo-700"
+                                                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
                                             >
                                                 View Job
                                             </a>
                                         )}
                                     </div>
                                     {job.description && (
-                                        <p className="mt-3 text-sm text-gray-700 whitespace-pre-line">
+                                        <p className="mt-3 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
                                             {job.description}
                                         </p>
                                     )}
@@ -288,7 +288,7 @@ export default function JobManager() {
                             ))}
                         {jobs.filter((job) => !savedJobIds.has(job.id))
                             .length === 0 && (
-                            <p className="text-gray-500">
+                            <p className="text-gray-500 dark:text-gray-400">
                                 You have already saved all available job
                                 postings.
                             </p>

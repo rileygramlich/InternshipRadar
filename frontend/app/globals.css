@@ -22,3 +22,16 @@ body {
 body {
     background-color: #f5f7fa;
 }
+
+@layer base {
+    [class~="dark"] {
+        color-scheme: dark;
+    }
+}
+
+@layer components {
+    .dark {
+        --tw-bg-opacity: 1;
+        background-color: #0f172a;
+    }
+}
