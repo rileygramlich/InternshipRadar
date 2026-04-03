@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 
 import { createClient } from "@/utils/supabase/client";
 
@@ -10,10 +11,16 @@ export default function Sidebar() {
     const pathname = usePathname();
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
+    const { resolvedTheme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
 
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [userName, setUserName] = useState<string | null>(null);
     const [authLoading, setAuthLoading] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         let active = true;
@@ -62,10 +69,10 @@ export default function Sidebar() {
     ];
 
     return (
-        <aside className="w-64 bg-white border-r border-gray-200 shadow-sm h-screen fixed left-0 top-0">
+        <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-sm h-screen fixed left-0 top-0">
             <div className="p-8">
-                <h1 className="text-2xl font-bold text-gray-900">Radar</h1>
-                <p className="text-sm text-gray-500 mt-1">InternshipRadar</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Radar</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">InternshipRadar</p>
             </div>
 
             <nav className="mt-8">
@@ -78,8 +85,8 @@ export default function Sidebar() {
                                     href={item.href}
                                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                                         isActive
-                                            ? "bg-blue-50 text-blue-600 font-medium"
-                                            : "text-gray-700 hover:bg-gray-50"
+                                            ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium"
+                                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                                     }`}
                                 >
                                     <span className="text-xl">{item.icon}</span>
@@ -91,23 +98,40 @@ export default function Sidebar() {
                 </ul>
             </nav>
 
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-                <div className="px-4 py-3 rounded-lg bg-gray-50">
+            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800">
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
                                 {userName || "Account"}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                                 {userEmail || "Not signed in"}
                             </p>
                         </div>
-                        <span className="text-xs text-gray-500">v0.1.0</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">v0.1.0</span>
+                            {mounted && (
+                                <button
+                                    onClick={() =>
+                                        setTheme(
+                                            resolvedTheme === "dark"
+                                                ? "light"
+                                                : "dark",
+                                        )
+                                    }
+                                    aria-label="Toggle dark mode"
+                                    className="rounded p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    {resolvedTheme === "dark" ? "☀️" : "🌙"}
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2">
                         <button
                             onClick={handleSwitchUser}
-                            className="w-full rounded bg-white border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="w-full rounded bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                             disabled={authLoading}
                         >
                             Switch user
