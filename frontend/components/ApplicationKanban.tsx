@@ -106,6 +106,21 @@ export default function ApplicationKanban() {
         }));
     }, [applications]);
 
+    const analytics = useMemo(() => {
+        const counts = Object.fromEntries(
+            columns.map((col) => [col.key, col.items.length]),
+        ) as Record<ApplicationStatus, number>;
+
+        const applied = counts.applied;
+        const interviews = counts.interview;
+        const conversionRate =
+            applied > 0 ? Math.round((interviews / applied) * 100) : 0;
+        const rejectionRate =
+            applied > 0 ? Math.round((counts.rejected / applied) * 100) : 0;
+
+        return { counts, conversionRate, rejectionRate };
+    }, [columns]);
+
     async function updateStatus(
         applicationId: string,
         nextStatus: ApplicationStatus,
@@ -250,7 +265,46 @@ export default function ApplicationKanban() {
                 </button>
             </div>
 
-            {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+            {/* Analytics summary bar */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-indigo-50 dark:bg-indigo-900 border border-indigo-100 dark:border-indigo-700 px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
+                {COLUMNS.map((col, index) => (
+                    <span key={col.key} className="flex items-center gap-1">
+                        {index !== 0 && (
+                            <span className="text-gray-300 dark:text-gray-600 select-none">
+                                |
+                            </span>
+                        )}
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                            {analytics.counts[col.key]}
+                        </span>{" "}
+                        {col.label}
+                    </span>
+                ))}
+                <span className="text-gray-300 dark:text-gray-600 select-none">
+                    |
+                </span>
+                <span className="flex items-center gap-1">
+                    <span className="font-semibold text-indigo-700 dark:text-indigo-400">
+                        {analytics.conversionRate}%
+                    </span>{" "}
+                    Applied → Interview
+                </span>
+                <span className="text-gray-300 dark:text-gray-600 select-none">
+                    |
+                </span>
+                <span className="flex items-center gap-1">
+                    <span className="font-semibold text-rose-700 dark:text-rose-400">
+                        {analytics.rejectionRate}%
+                    </span>{" "}
+                    Rejection Rate
+                </span>
+            </div>
+
+            {error && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                    {error}
+                </p>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
                 {columns.map((column) => (
