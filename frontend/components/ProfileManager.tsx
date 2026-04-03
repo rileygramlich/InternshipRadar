@@ -117,14 +117,14 @@ export default function ProfileManager() {
                 prev
                     ? {
                           ...prev,
-                          skills: Array.isArray(json.skills)
+                          skills: Array.isArray(json?.skills)
                               ? json.skills.join(", ")
                               : prev.skills,
                           location_preference:
-                              json.location_preference ||
+                              json?.location_preference ||
                               prev.location_preference,
                           experience_level:
-                              json.experience_level || prev.experience_level,
+                              json?.experience_level || prev.experience_level,
                       }
                     : prev,
             );
@@ -181,16 +181,16 @@ export default function ProfileManager() {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900 mb-3">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
                     Import from Resume
                 </h2>
-                <p className="text-sm text-gray-500 mb-3">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                     Upload your PDF resume to automatically fill in your skills,
                     location preference, and experience level.
                 </p>
                 {resumeError && (
-                    <p className="text-sm text-red-600 mb-3">{resumeError}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400 mb-3">{resumeError}</p>
                 )}
                 <label className="flex items-center gap-3 cursor-pointer">
                     <span className="px-4 py-2 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-700 disabled:opacity-60">
@@ -204,48 +204,48 @@ export default function ProfileManager() {
                         onChange={handleResumeUpload}
                     />
                     {resumeParsing && (
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
                             Extracting data from your resume…
                         </span>
                     )}
                 </label>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                         Profile Settings
                     </h2>
                     <button
                         onClick={refresh}
-                        className="text-sm text-indigo-600 hover:text-indigo-700"
+                        className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
                         disabled={loading}
                     >
                         {loading ? "Refreshing..." : "Refresh"}
                     </button>
                 </div>
-                {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+                {error && <p className="text-sm text-red-600 dark:text-red-400 mb-3">{error}</p>}
                 {success && (
-                    <p className="text-sm text-emerald-600 mb-3">{success}</p>
+                    <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-3">{success}</p>
                 )}
                 {!profile || !edits ? (
-                    <p className="text-gray-500">
+                    <p className="text-gray-500 dark:text-gray-400">
                         No profile found yet. Sign up first to create your
                         account profile.
                     </p>
                 ) : (
-                    <div className="p-4 border border-gray-200 rounded-md">
+                    <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-md">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                     Created:{" "}
                                     {new Date(
                                         profile.created_at,
                                     ).toLocaleString()}
                                 </p>
-                                <p className="text-sm text-gray-700 font-medium">
+                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">
                                     {(edits.name || "").trim() || "Unnamed"}
                                 </p>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {edits.email || "No email"}
                                 </p>
                             </div>
@@ -253,11 +253,11 @@ export default function ProfileManager() {
                         </div>
                         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                     Name
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded border-gray-300 shadow-sm text-sm"
+                                    className="mt-1 w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 shadow-sm text-sm"
                                     value={edits.name}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -272,25 +272,25 @@ export default function ProfileManager() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                     Email
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded border-gray-300 bg-gray-100 shadow-sm text-sm text-gray-600"
+                                    className="mt-1 w-full rounded border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 shadow-sm text-sm text-gray-600 dark:text-gray-400"
                                     type="email"
                                     value={edits.email}
                                     readOnly
                                 />
-                                <p className="mt-1 text-xs text-gray-500">
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                     Email is managed by your account login.
                                 </p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                     Webhook URL
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded border-gray-300 shadow-sm text-sm"
+                                    className="mt-1 w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 shadow-sm text-sm"
                                     value={edits.discord_webhook_url}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -306,11 +306,11 @@ export default function ProfileManager() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                     Skills
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded border-gray-300 shadow-sm text-sm"
+                                    className="mt-1 w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 shadow-sm text-sm"
                                     value={edits.skills}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -325,11 +325,11 @@ export default function ProfileManager() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                     Location
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded border-gray-300 shadow-sm text-sm"
+                                    className="mt-1 w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 shadow-sm text-sm"
                                     value={edits.location_preference}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -345,11 +345,11 @@ export default function ProfileManager() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                     Experience Level
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded border-gray-300 shadow-sm text-sm"
+                                    className="mt-1 w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 shadow-sm text-sm"
                                     value={edits.experience_level}
                                     onChange={(e) =>
                                         setEdits((prev) =>
