@@ -109,6 +109,7 @@ export async function createJobPosting(
     title: string,
     url: string,
     description: string,
+    tech_tags?: string[],
 ) {
     const { data, error } = await supabase
         .from("job_postings")
@@ -118,6 +119,7 @@ export async function createJobPosting(
                 title,
                 url,
                 description,
+                ...(tech_tags !== undefined ? { tech_tags } : {}),
             },
         ])
         .select();
@@ -165,6 +167,7 @@ export async function updateJobPosting(
         title?: string;
         url?: string;
         description?: string;
+        tech_tags?: string[];
     },
 ) {
     const { data, error } = await supabase

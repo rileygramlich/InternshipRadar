@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { SkillGapIndicator } from "@/components/SkillPill";
 
 type ApplicationStatus =
     | "saved"
@@ -17,6 +18,7 @@ type JobPosting = {
     title: string;
     url: string | null;
     description: string | null;
+    tech_tags: string[] | null;
     created_at: string;
 };
 
@@ -35,6 +37,7 @@ export default function JobManager() {
         useState<ApplicationStatus>("saved");
     const [addingForJobId, setAddingForJobId] = useState<string | null>(null);
     const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
+    const [profileSkills, setProfileSkills] = useState<string[]>([]);
 
     useEffect(() => {
         refresh();
@@ -82,8 +85,14 @@ export default function JobManager() {
             if (profileRes.ok) {
                 pId = profileJson.data?.id ?? "";
                 setProfileId(pId);
+                setProfileSkills(
+                    Array.isArray(profileJson.data?.skills)
+                        ? profileJson.data.skills
+                        : [],
+                );
             } else {
                 setProfileId("");
+                setProfileSkills([]);
             }
 
             // Fetch user's applications to filter out saved jobs
@@ -255,6 +264,13 @@ export default function JobManager() {
                                             {job.description}
                                         </p>
                                     )}
+                                    {Array.isArray(job.tech_tags) &&
+                                        job.tech_tags.length > 0 && (
+                                            <SkillGapIndicator
+                                                techTags={job.tech_tags}
+                                                profileSkills={profileSkills}
+                                            />
+                                        )}
                                     <div className="mt-3 flex justify-end">
                                         <button
                                             onClick={() =>

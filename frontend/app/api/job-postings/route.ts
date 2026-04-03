@@ -27,15 +27,24 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { company, title, url, description } = body as {
+        const { company, title, url, description, tech_tags } = body as {
             company?: string;
             title?: string;
             url?: string;
             description?: string;
+            tech_tags?: string[];
         };
 
         if (!company || !title) {
             return badRequest("company and title are required.");
+        }
+
+        if (
+            tech_tags !== undefined &&
+            (!Array.isArray(tech_tags) ||
+                !tech_tags.every((t) => typeof t === "string"))
+        ) {
+            return badRequest("tech_tags must be an array of strings.");
         }
 
         const job = await createJobPosting(
@@ -43,6 +52,7 @@ export async function POST(req: NextRequest) {
             title,
             url ?? "",
             description ?? "",
+            tech_tags,
         );
 
         return NextResponse.json(job, { status: 201 });
