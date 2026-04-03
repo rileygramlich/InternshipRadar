@@ -264,21 +264,25 @@ export default function ApplicationKanban() {
             </div>
 
             {/* Analytics summary bar */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-indigo-50 border border-indigo-100 px-4 py-3 text-sm text-gray-700">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-indigo-50 dark:bg-indigo-900 border border-indigo-100 dark:border-indigo-700 px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
                 {COLUMNS.map((col, index) => (
                     <span key={col.key} className="flex items-center gap-1">
                         {index !== 0 && (
-                            <span className="text-gray-300 select-none">|</span>
+                            <span className="text-gray-300 dark:text-gray-600 select-none">
+                                |
+                            </span>
                         )}
-                        <span className="font-semibold text-gray-900">
+                        <span className="font-semibold text-gray-900 dark:text-white">
                             {analytics.counts[col.key]}
                         </span>{" "}
                         {col.label}
                     </span>
                 ))}
-                <span className="text-gray-300 select-none">|</span>
+                <span className="text-gray-300 dark:text-gray-600 select-none">
+                    |
+                </span>
                 <span className="flex items-center gap-1">
-                    <span className="font-semibold text-indigo-700">
+                    <span className="font-semibold text-indigo-700 dark:text-indigo-400">
                         {analytics.conversionRate}%
                     </span>{" "}
                     Applied → Interview
