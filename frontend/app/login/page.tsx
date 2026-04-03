@@ -73,7 +73,7 @@ export default function LoginPage() {
 
     if (loading) {
         return (
-            <div className="flex h-screen items-center justify-center text-gray-700">
+            <div className="flex h-screen items-center justify-center text-gray-700 dark:text-gray-300">
                 Checking session...
             </div>
         );
@@ -223,20 +223,20 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-            <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-sm border border-gray-200">
-                <h1 className="text-2xl font-semibold text-gray-900 mb-4">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
+            <div className="w-full max-w-md rounded-xl bg-white dark:bg-gray-900 p-8 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
                     {mode === "signin"
                         ? "Sign in to Internship Radar"
                         : "Create your Internship Radar account"}
                 </h1>
-                <p className="text-sm text-gray-600 mb-6">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
                     {mode === "signin"
                         ? "Use your email and password."
                         : "Sign up with your name, email, and password."}
                 </p>
 
-                <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1">
+                <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
                     <button
                         type="button"
                         onClick={() => {
@@ -247,8 +247,8 @@ export default function LoginPage() {
                         className={[
                             "rounded-md px-3 py-2 text-sm font-medium",
                             mode === "signin"
-                                ? "bg-white text-gray-900 shadow-sm"
-                                : "text-gray-600 hover:text-gray-800",
+                                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                                : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200",
                         ].join(" ")}
                     >
                         Sign In
@@ -263,8 +263,8 @@ export default function LoginPage() {
                         className={[
                             "rounded-md px-3 py-2 text-sm font-medium",
                             mode === "signup"
-                                ? "bg-white text-gray-900 shadow-sm"
-                                : "text-gray-600 hover:text-gray-800",
+                                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                                : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200",
                         ].join(" ")}
                     >
                         Sign Up
@@ -280,7 +280,7 @@ export default function LoginPage() {
                         type="button"
                         onClick={handleGoogleAuth}
                         disabled={oauthSubmitting || submitting}
-                        className="w-full rounded border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                        className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-60"
                     >
                         {oauthSubmitting
                             ? "Redirecting to Google..."
@@ -288,20 +288,20 @@ export default function LoginPage() {
                     </button>
 
                     <div className="flex items-center gap-3">
-                        <div className="h-px flex-1 bg-gray-200" />
-                        <span className="text-xs uppercase tracking-wide text-gray-400">
+                        <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                        <span className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">
                             or
                         </span>
-                        <div className="h-px flex-1 bg-gray-200" />
+                        <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
                     </div>
 
                     {mode === "signup" && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Name
                             </label>
                             <input
-                                className="mt-1 w-full rounded border-gray-300 shadow-sm"
+                                className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Ada Lovelace"
@@ -312,11 +312,11 @@ export default function LoginPage() {
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Email
                         </label>
                         <input
-                            className="mt-1 w-full rounded border-gray-300 shadow-sm"
+                            className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -327,11 +327,11 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Password
                         </label>
                         <input
-                            className="mt-1 w-full rounded border-gray-300 shadow-sm"
+                            className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -347,16 +347,20 @@ export default function LoginPage() {
                     </div>
 
                     {authError && (
-                        <p className="text-sm text-red-600">{authError}</p>
+                        <p className="text-sm text-red-600 dark:text-red-400">
+                            {authError}
+                        </p>
                     )}
                     {message && (
-                        <p className="text-sm text-emerald-600">{message}</p>
+                        <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                            {message}
+                        </p>
                     )}
 
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="w-full rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 disabled:opacity-60"
+                        className="w-full rounded bg-indigo-600 dark:bg-indigo-500 px-4 py-2 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-60"
                     >
                         {submitting
                             ? mode === "signin"
