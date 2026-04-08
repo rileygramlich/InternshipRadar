@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { SkillGapIndicator } from "@/components/SkillPill";
@@ -22,6 +22,61 @@ type JobPosting = {
     created_at: string;
 };
 
+type PendingApplicationSave = {
+    jobId: string;
+    status: ApplicationStatus;
+};
+
+const pendingApplicationSaveKey = "internshipRadar.pendingApplicationSave";
+
+function readPendingApplicationSave() {
+    if (typeof window === "undefined") {
+        return null;
+    }
+
+    const rawValue = window.sessionStorage.getItem(pendingApplicationSaveKey);
+
+    if (!rawValue) {
+        return null;
+    }
+
+    try {
+        const parsed = JSON.parse(rawValue) as Partial<PendingApplicationSave>;
+        if (
+            typeof parsed.jobId === "string" &&
+            typeof parsed.status === "string"
+        ) {
+            return {
+                jobId: parsed.jobId,
+                status: parsed.status as ApplicationStatus,
+            };
+        }
+    } catch {
+        window.sessionStorage.removeItem(pendingApplicationSaveKey);
+    }
+
+    return null;
+}
+
+function writePendingApplicationSave(value: PendingApplicationSave) {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    window.sessionStorage.setItem(
+        pendingApplicationSaveKey,
+        JSON.stringify(value),
+    );
+}
+
+function clearPendingApplicationSave() {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    window.sessionStorage.removeItem(pendingApplicationSaveKey);
+}
+
 export default function JobManager() {
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
@@ -38,10 +93,47 @@ export default function JobManager() {
     const [addingForJobId, setAddingForJobId] = useState<string | null>(null);
     const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
     const [profileSkills, setProfileSkills] = useState<string[]>([]);
+    const [pendingSave, setPendingSave] =
+        useState<PendingApplicationSave | null>(null);
+    const autoSaveAttemptedRef = useRef(false);
 
     useEffect(() => {
         refresh();
     }, []);
+
+    useEffect(() => {
+        setPendingSave(readPendingApplicationSave());
+    }, []);
+
+    useEffect(() => {
+        if (
+            !isAuthenticated ||
+            !profileId ||
+            !pendingSave ||
+            autoSaveAttemptedRef.current
+        ) {
+            return;
+        }
+
+        const job = jobs.find(
+            (candidate) => candidate.id === pendingSave.jobId,
+        );
+        if (!job) {
+            return;
+        }
+
+        autoSaveAttemptedRef.current = true;
+
+        void (async () => {
+            const saved = await saveApplication(job, pendingSave.status);
+            if (saved) {
+                clearPendingApplicationSave();
+                setPendingSave(null);
+            } else {
+                autoSaveAttemptedRef.current = false;
+            }
+        })();
+    }, [isAuthenticated, jobs, pendingSave, profileId]);
 
     async function refresh() {
         setLoading(true);
@@ -124,19 +216,9 @@ export default function JobManager() {
         }
     }
 
-    async function handleAddToApplications(job: JobPosting) {
+    async function saveApplication(job: JobPosting, status: ApplicationStatus) {
         setError(null);
         setActionMessage(null);
-
-        if (!isAuthenticated) {
-            router.push("/login?mode=signup&redirect=/radar");
-            return;
-        }
-
-        if (!profileId) {
-            setError("Complete your profile settings before saving jobs.");
-            return;
-        }
 
         setAddingForJobId(job.id);
         try {
@@ -146,7 +228,7 @@ export default function JobManager() {
                 body: JSON.stringify({
                     profileId,
                     jobId: job.id,
-                    status: quickApplyStatus,
+                    status,
                     matchScore: 0,
                 }),
             });
@@ -161,15 +243,35 @@ export default function JobManager() {
             setActionMessage(
                 `Added ${job.company} - ${job.title} to Applications.`,
             );
+            return true;
         } catch (err) {
             setError(
                 err instanceof Error
                     ? err.message
                     : "Failed to add job to applications",
             );
+            return false;
         } finally {
             setAddingForJobId(null);
         }
+    }
+
+    async function handleAddToApplications(job: JobPosting) {
+        if (!isAuthenticated) {
+            writePendingApplicationSave({
+                jobId: job.id,
+                status: quickApplyStatus,
+            });
+            router.push("/login?redirect=/radar");
+            return;
+        }
+
+        if (!profileId) {
+            setError("Complete your profile settings before saving jobs.");
+            return;
+        }
+
+        await saveApplication(job, quickApplyStatus);
     }
 
     return (
@@ -187,7 +289,11 @@ export default function JobManager() {
                         {loading ? "Refreshing..." : "Refresh"}
                     </button>
                 </div>
-                {error && <p className="text-sm text-red-600 dark:text-red-400 mb-3">{error}</p>}
+                {error && (
+                    <p className="text-sm text-red-600 dark:text-red-400 mb-3">
+                        {error}
+                    </p>
+                )}
                 {actionMessage && (
                     <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-3">
                         {actionMessage}
@@ -197,7 +303,7 @@ export default function JobManager() {
                 {!isAuthenticated && (
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                         You can browse all jobs. Saving an application will
-                        redirect you to sign up.
+                        redirect you to log in, then resume the save.
                     </p>
                 )}
 
@@ -223,7 +329,9 @@ export default function JobManager() {
                 </div>
 
                 {jobs.length === 0 ? (
-                    <p className="text-gray-500 dark:text-gray-400">No job postings yet.</p>
+                    <p className="text-gray-500 dark:text-gray-400">
+                        No job postings yet.
+                    </p>
                 ) : (
                     <div className="space-y-4">
                         {jobs

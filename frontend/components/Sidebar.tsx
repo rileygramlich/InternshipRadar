@@ -42,10 +42,28 @@ export default function Sidebar() {
         };
     }, [supabase]);
 
+    useEffect(() => {
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUserEmail(session?.user?.email ?? null);
+            const metadataName =
+                (session?.user?.user_metadata as { full_name?: string } | null)
+                    ?.full_name ?? null;
+            setUserName(metadataName || session?.user?.email || null);
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [supabase]);
+
     async function handleLogout() {
         try {
             setAuthLoading(true);
             await supabase.auth.signOut();
+            setUserEmail(null);
+            setUserName(null);
             router.replace("/login");
         } finally {
             setAuthLoading(false);
@@ -56,6 +74,8 @@ export default function Sidebar() {
         try {
             setAuthLoading(true);
             await supabase.auth.signOut();
+            setUserEmail(null);
+            setUserName(null);
             router.push("/login");
         } finally {
             setAuthLoading(false);
@@ -71,8 +91,12 @@ export default function Sidebar() {
     return (
         <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-sm h-screen fixed left-0 top-0">
             <div className="p-8">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Radar</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">InternshipRadar</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    Radar
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    InternshipRadar
+                </p>
             </div>
 
             <nav className="mt-8">
@@ -110,7 +134,9 @@ export default function Sidebar() {
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">v0.1.0</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                v0.1.0
+                            </span>
                             {mounted && (
                                 <button
                                     onClick={() =>

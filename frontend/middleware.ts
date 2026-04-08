@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-const protectedPaths = ["/tracker", "/profile", "/radar"];
+const protectedPaths = ["/tracker", "/profile"];
 
 export async function middleware(request: NextRequest) {
     const response = NextResponse.next({
@@ -65,5 +65,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/tracker/:path*", "/profile/:path*", "/radar/:path*", "/login"],
+    matcher: ["/tracker/:path*", "/profile/:path*", "/login"],
 };
