@@ -275,15 +275,15 @@ export default function JobManager() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <div className="space-y-4 md:space-y-6">
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900 md:p-6">
+                <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white md:text-2xl lg:text-3xl">
                         Jobs
                     </h2>
                     <button
                         onClick={refresh}
-                        className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+                        className="min-h-[44px] self-start rounded-md px-3 py-2 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-300 md:self-auto"
                         disabled={loading}
                     >
                         {loading ? "Refreshing..." : "Refresh"}
@@ -312,7 +312,7 @@ export default function JobManager() {
                         Default Application Status
                     </label>
                     <select
-                        className="mt-1 w-full md:w-72 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 shadow-sm text-sm"
+                        className="mt-1 min-h-[44px] w-full rounded border-gray-300 px-3 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 md:w-72"
                         value={quickApplyStatus}
                         onChange={(e) =>
                             setQuickApplyStatus(
@@ -339,17 +339,17 @@ export default function JobManager() {
                             .map((job) => (
                                 <div
                                     key={job.id}
-                                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-md"
+                                    className="rounded-md border border-gray-200 p-4 dark:border-gray-700"
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-base text-gray-900 dark:text-white font-semibold">
+                                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-base font-semibold text-gray-900 dark:text-white md:text-lg">
                                                 {job.company}
                                             </p>
-                                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                                            <p className="line-clamp-2 text-sm text-gray-700 dark:text-gray-300 md:text-base">
                                                 {job.title}
                                             </p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 md:text-sm">
                                                 Created:{" "}
                                                 {new Date(
                                                     job.created_at,
@@ -361,14 +361,14 @@ export default function JobManager() {
                                                 href={job.url}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+                                                className="inline-flex min-h-[44px] items-center rounded-md px-3 py-2 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-300"
                                             >
                                                 View Job
                                             </a>
                                         )}
                                     </div>
                                     {job.description && (
-                                        <p className="mt-3 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                                        <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
                                             {job.description}
                                         </p>
                                     )}
@@ -384,7 +384,7 @@ export default function JobManager() {
                                             onClick={() =>
                                                 handleAddToApplications(job)
                                             }
-                                            className="mr-2 px-3 py-1.5 rounded bg-emerald-600 text-white text-sm hover:bg-emerald-700 disabled:opacity-50"
+                                            className="min-h-[44px] rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
                                             disabled={addingForJobId === job.id}
                                         >
                                             {addingForJobId === job.id

@@ -268,20 +268,20 @@ export default function ApplicationKanban() {
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
+        <div className="space-y-4 overflow-x-hidden lg:space-y-6">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white md:text-2xl lg:text-3xl">
                         Applications
                     </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 md:text-base">
                         Drag cards between columns to change status. Changes
                         sync instantly to Supabase.
                     </p>
                 </div>
                 <button
                     onClick={refresh}
-                    className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+                    className="min-h-[44px] self-start rounded-md px-3 py-2 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-300 md:self-auto"
                     disabled={loading}
                 >
                     {loading ? "Refreshing..." : "Refresh"}
@@ -289,7 +289,7 @@ export default function ApplicationKanban() {
             </div>
 
             {/* Analytics summary bar */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-indigo-50 dark:bg-indigo-900 border border-indigo-100 dark:border-indigo-700 px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-gray-700 dark:border-indigo-700 dark:bg-indigo-900 dark:text-gray-200">
                 {COLUMNS.map((col, index) => (
                     <span key={col.key} className="flex items-center gap-1">
                         {index !== 0 && (
@@ -329,13 +329,13 @@ export default function ApplicationKanban() {
                 </p>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+            <div className="-mx-4 flex snap-x snap-mandatory flex-nowrap gap-4 overflow-x-auto px-4 pb-2 hide-scrollbar lg:mx-0 lg:grid lg:grid-cols-5 lg:gap-4 lg:overflow-visible lg:px-0">
                 {columns.map((column) => (
                     <div
                         key={column.key}
                         onDragOver={(event) => event.preventDefault()}
                         onDrop={onDropToColumn(column.key)}
-                        className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 min-h-52"
+                        className="w-[85vw] shrink-0 snap-center rounded-lg border border-gray-200 bg-gray-50 p-3 min-h-52 dark:border-gray-700 dark:bg-gray-800 lg:w-auto lg:shrink lg:snap-none"
                     >
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
@@ -367,21 +367,21 @@ export default function ApplicationKanban() {
                                         }}
                                         onDragEnd={() => setDraggingId(null)}
                                         className={[
-                                            "rounded-md border bg-white dark:bg-gray-900 p-3 shadow-sm cursor-grab active:cursor-grabbing",
+                                            "cursor-grab rounded-md border bg-white p-3 shadow-sm active:cursor-grabbing dark:bg-gray-900",
                                             column.accentClass,
                                             updatingIds[application.id]
                                                 ? "opacity-60"
                                                 : "opacity-100",
                                         ].join(" ")}
                                     >
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 break-all">
+                                        <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                                             {application.id}
                                         </p>
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1 break-words">
+                                        <p className="mt-1 truncate text-sm font-semibold text-gray-900 dark:text-white">
                                             {application.job_postings
                                                 ?.company || "Unknown Company"}
                                         </p>
-                                        <p className="text-xs text-gray-700 dark:text-gray-300 break-words">
+                                        <p className="line-clamp-2 text-xs text-gray-700 dark:text-gray-300">
                                             {application.job_postings?.title ||
                                                 "Unknown Job Title"}
                                         </p>
@@ -414,15 +414,17 @@ export default function ApplicationKanban() {
                                                 }
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 break-all"
+                                                className="mt-2 inline-flex min-h-[44px] max-w-full items-center rounded-md px-3 py-2 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-300"
                                             >
-                                                View Posting
+                                                <span className="truncate">
+                                                    View Posting
+                                                </span>
                                             </a>
                                         )}
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 break-all">
+                                        <p className="mt-1 truncate text-xs text-gray-600 dark:text-gray-400">
                                             Profile: {application.profile_id}
                                         </p>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 break-all">
+                                        <p className="truncate text-xs text-gray-600 dark:text-gray-400">
                                             Job ID: {application.job_id}
                                         </p>
                                         <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
@@ -436,7 +438,7 @@ export default function ApplicationKanban() {
 
                                         <div className="mt-2">
                                             <select
-                                                className="w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 text-xs"
+                                                className="min-h-[44px] w-full rounded border-gray-300 px-2 text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
                                                 value={application.status}
                                                 onChange={(event) => {
                                                     if (
@@ -487,8 +489,8 @@ export default function ApplicationKanban() {
 
             {/* Confirmation Dialog */}
             {confirmDialog && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg max-w-sm w-full mx-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                    <div className="mx-4 w-full max-w-sm rounded-lg bg-white shadow-lg dark:bg-gray-900">
                         <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                                 Remove Job Posting
@@ -510,13 +512,13 @@ export default function ApplicationKanban() {
                                 This action cannot be undone.
                             </p>
                         </div>
-                        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-end gap-3">
+                        <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
                             <button
                                 onClick={confirmDelete}
                                 disabled={
                                     deletingJobId === confirmDialog.job_id
                                 }
-                                className="px-4 py-2 rounded bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                                className="min-h-[44px] rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
                             >
                                 {deletingJobId === confirmDialog.job_id
                                     ? "Removing..."
@@ -524,7 +526,7 @@ export default function ApplicationKanban() {
                             </button>
                             <button
                                 onClick={() => setConfirmDialog(null)}
-                                className="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
+                                className="min-h-[44px] rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
                             >
                                 Cancel
                             </button>

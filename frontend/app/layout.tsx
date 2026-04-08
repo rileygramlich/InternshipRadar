@@ -15,16 +15,18 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className="bg-gray-50 dark:bg-gray-950">
+            <body className="bg-gray-50 dark:bg-gray-950 overflow-x-hidden">
                 <ThemeProvider
                     attribute="class"
                     defaultTheme="system"
                     enableSystem
                 >
-                    <div className="flex h-screen overflow-hidden">
+                    <div className="flex min-h-screen overflow-hidden">
                         <Sidebar />
-                        <main className="ml-64 flex-1 overflow-auto">
-                            <div className="p-8">{children}</div>
+                        <main className="flex-1 overflow-y-auto md:ml-64">
+                            <div className="p-4 pb-24 md:p-6 md:pb-6 lg:p-8">
+                                {children}
+                            </div>
                         </main>
                     </div>
                 </ThemeProvider>
