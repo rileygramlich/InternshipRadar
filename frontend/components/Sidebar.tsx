@@ -17,6 +17,7 @@ export default function Sidebar() {
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [userName, setUserName] = useState<string | null>(null);
     const [authLoading, setAuthLoading] = useState(false);
+    const isLoggedIn = Boolean(userEmail);
 
     useEffect(() => {
         setMounted(true);
@@ -59,6 +60,10 @@ export default function Sidebar() {
     }, [supabase]);
 
     async function handleLogout() {
+        if (!isLoggedIn) {
+            return;
+        }
+
         try {
             setAuthLoading(true);
             await supabase.auth.signOut();
@@ -71,6 +76,10 @@ export default function Sidebar() {
     }
 
     async function handleSwitchUser() {
+        if (!isLoggedIn) {
+            return;
+        }
+
         try {
             setAuthLoading(true);
             await supabase.auth.signOut();
@@ -162,22 +171,24 @@ export default function Sidebar() {
                                 )}
                             </div>
                         </div>
-                        <div className="mt-3 grid grid-cols-2 gap-2">
-                            <button
-                                onClick={handleSwitchUser}
-                                className="min-h-[44px] w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                                disabled={authLoading}
-                            >
-                                Switch user
-                            </button>
-                            <button
-                                onClick={handleLogout}
-                                className="min-h-[44px] w-full rounded bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-60"
-                                disabled={authLoading}
-                            >
-                                Log out
-                            </button>
-                        </div>
+                        {isLoggedIn && (
+                            <div className="mt-3 grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={handleSwitchUser}
+                                    className="min-h-[44px] w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                    disabled={authLoading}
+                                >
+                                    Switch user
+                                </button>
+                                <button
+                                    onClick={handleLogout}
+                                    className="min-h-[44px] w-full rounded bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-60"
+                                    disabled={authLoading}
+                                >
+                                    Log out
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </aside>
