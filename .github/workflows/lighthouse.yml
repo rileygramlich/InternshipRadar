@@ -1,0 +1,14 @@
+name: Performance Audit
+on: [pull_request]
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: npm install
+      - name: Build Next.js app
+        run: npm run build
+      - name: Run Lighthouse CI
+        run: npx @lhci/cli@0.13.x autorun
