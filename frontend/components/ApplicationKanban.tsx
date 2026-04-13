@@ -155,12 +155,16 @@ export default function ApplicationKanban() {
             columns.map((col) => [col.key, col.items.length]),
         ) as Record<ApplicationStatus, number>;
 
-        const applied = counts.applied;
+        // Any stage to the right of Applied still counts as applied.
+        const appliedBase =
+            counts.applied + counts.interview + counts.offer + counts.rejected;
         const interviews = counts.interview;
         const conversionRate =
-            applied > 0 ? Math.round((interviews / applied) * 100) : 0;
+            appliedBase > 0 ? Math.round((interviews / appliedBase) * 100) : 0;
         const rejectionRate =
-            applied > 0 ? Math.round((counts.rejected / applied) * 100) : 0;
+            appliedBase > 0
+                ? Math.round((counts.rejected / appliedBase) * 100)
+                : 0;
 
         return { counts, conversionRate, rejectionRate };
     }, [columns]);
