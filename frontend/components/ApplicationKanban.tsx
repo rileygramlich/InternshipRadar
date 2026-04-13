@@ -11,6 +11,9 @@ type ApplicationStatus =
     | "offer"
     | "rejected";
 
+const TRACKER_PRIVATE_MARKER = "TRACKER_PRIVATE::";
+const LEGACY_PRIVATE_MARKER = "__TRACKER_PRIVATE__";
+
 type Application = {
     id: string;
     profile_id: string;
@@ -75,6 +78,19 @@ function normalizeText(value: string | null | undefined) {
     return (value ?? "").trim().toLowerCase();
 }
 
+function stripPrivateMarker(value: string | null | undefined) {
+    const raw = value ?? "";
+    if (raw.startsWith(LEGACY_PRIVATE_MARKER)) {
+        return raw.replace(LEGACY_PRIVATE_MARKER, "").trim();
+    }
+
+    if (!raw.startsWith(TRACKER_PRIVATE_MARKER)) {
+        return raw;
+    }
+
+    return raw.replace(TRACKER_PRIVATE_MARKER, "").trim();
+}
+
 function includesAny(haystack: string, needles: string[]) {
     return needles.some((needle) => haystack.includes(needle));
 }
@@ -110,7 +126,9 @@ function getLocationScore(
     }
 
     const jobLocationText = normalizeText(
-        [job.location, job.title, job.description].filter(Boolean).join(" "),
+        [job.location, job.title, stripPrivateMarker(job.description)]
+            .filter(Boolean)
+            .join(" "),
     );
 
     if (!jobLocationText) {
@@ -190,7 +208,7 @@ function getLevelScore(
     }
 
     const jobLevelText = normalizeText(
-        [job.experience_level, job.title, job.description]
+        [job.experience_level, job.title, stripPrivateMarker(job.description)]
             .filter(Boolean)
             .join(" "),
     );
@@ -258,6 +276,17 @@ export default function ApplicationKanban() {
     const [confirmDialog, setConfirmDialog] = useState<Application | null>(
         null,
     );
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [submittingAdd, setSubmittingAdd] = useState(false);
+    const [parsingLink, setParsingLink] = useState(false);
+    const [addForm, setAddForm] = useState({
+        company: "",
+        title: "",
+        url: "",
+        description: "",
+        tech_tags: "",
+        status: "applied" as ApplicationStatus,
+    });
 
     const refresh = useCallback(async () => {
         setLoading(true);
@@ -502,6 +531,153 @@ export default function ApplicationKanban() {
         }
     }
 
+    async function handleParseFromLink() {
+        if (!addForm.url.trim()) {
+            setError("Add a job posting URL first.");
+            return;
+        }
+
+        setParsingLink(true);
+        setError(null);
+        try {
+            const res = await fetch("/api/parse-job-link", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: addForm.url.trim() }),
+            });
+            const json = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(json.error || "Failed to parse job posting");
+            }
+
+            setAddForm((prev) => ({
+                ...prev,
+                company:
+                    typeof json.company === "string" && json.company.trim()
+                        ? json.company.trim()
+                        : prev.company,
+                title:
+                    typeof json.title === "string" && json.title.trim()
+                        ? json.title.trim()
+                        : prev.title,
+                description:
+                    typeof json.description === "string" &&
+                    json.description.trim()
+                        ? json.description.trim()
+                        : prev.description,
+                tech_tags: Array.isArray(json.tech_tags)
+                    ? json.tech_tags.join(", ")
+                    : prev.tech_tags,
+            }));
+        } catch (err) {
+            setError(
+                err instanceof Error ? err.message : "Failed to parse job URL",
+            );
+        } finally {
+            setParsingLink(false);
+        }
+    }
+
+    async function handleCreateManualApplication() {
+        if (!addForm.company.trim() || !addForm.title.trim()) {
+            setError("Company and title are required.");
+            return;
+        }
+
+        setSubmittingAdd(true);
+        setError(null);
+        try {
+            const techTags = addForm.tech_tags
+                .split(",")
+                .map((tag) => tag.trim())
+                .filter(Boolean);
+
+            const locationScore = getLocationScore(
+                {
+                    id: "temp",
+                    profile_id: "temp",
+                    job_id: "temp",
+                    match_score: 0,
+                    status: addForm.status,
+                    created_at: new Date().toISOString(),
+                    job_postings: {
+                        id: "temp",
+                        company: addForm.company,
+                        title: addForm.title,
+                        url: addForm.url,
+                        description: addForm.description,
+                        tech_tags: techTags,
+                    },
+                },
+                profileLocationPreference,
+                profileRemoteOnly,
+            );
+            const levelScore = getLevelScore(
+                {
+                    id: "temp",
+                    profile_id: "temp",
+                    job_id: "temp",
+                    match_score: 0,
+                    status: addForm.status,
+                    created_at: new Date().toISOString(),
+                    job_postings: {
+                        id: "temp",
+                        company: addForm.company,
+                        title: addForm.title,
+                        url: addForm.url,
+                        description: addForm.description,
+                        tech_tags: techTags,
+                    },
+                },
+                profileExperienceLevel,
+            );
+            const skillScore = getSkillScore(techTags, profileSkills);
+            const matchScore = Math.round(
+                (locationScore * 0.5 + levelScore * 0.25 + skillScore * 0.25) *
+                    100,
+            );
+
+            const res = await fetch("/api/applications/manual", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    company: addForm.company.trim(),
+                    title: addForm.title.trim(),
+                    url: addForm.url.trim(),
+                    description: addForm.description.trim(),
+                    tech_tags: techTags,
+                    status: addForm.status,
+                    match_score: matchScore,
+                }),
+            });
+
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(json.error || "Failed to add application");
+            }
+
+            setShowAddModal(false);
+            setAddForm({
+                company: "",
+                title: "",
+                url: "",
+                description: "",
+                tech_tags: "",
+                status: "applied",
+            });
+            await refresh();
+        } catch (err) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : "Failed to add application",
+            );
+        } finally {
+            setSubmittingAdd(false);
+        }
+    }
+
     function onDropToColumn(status: ApplicationStatus) {
         return async (event: DragEvent<HTMLDivElement>) => {
             event.preventDefault();
@@ -624,6 +800,21 @@ export default function ApplicationKanban() {
                                       {column.items.length}
                                   </span>
                               </div>
+                              {column.key === "applied" && (
+                                  <div className="mb-3 flex justify-end">
+                                      <button
+                                          type="button"
+                                          onClick={() => {
+                                              setError(null);
+                                              setShowAddModal(true);
+                                          }}
+                                          className="btn-ripple inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-base font-semibold text-md-on-surface hover:bg-gray-100 dark:border-[#344051] dark:bg-[#1b2430] dark:text-white dark:hover:bg-[#202938]"
+                                          aria-label="Add your own application"
+                                      >
+                                          +
+                                      </button>
+                                  </div>
+                              )}
 
                               <div className="space-y-3">
                                   {column.items.length === 0 ? (
@@ -668,11 +859,11 @@ export default function ApplicationKanban() {
                                               {application.job_postings
                                                   ?.description && (
                                                   <p className="text-xs text-md-subtitle dark:text-gray-400 mt-1 line-clamp-3">
-                                                      {
+                                                      {stripPrivateMarker(
                                                           application
                                                               .job_postings
-                                                              .description
-                                                      }
+                                                              .description,
+                                                      )}
                                                   </p>
                                               )}
                                               {application.job_postings
@@ -823,6 +1014,151 @@ export default function ApplicationKanban() {
                                 className="btn-ripple min-h-[44px] rounded-2xl border border-gray-200 px-4 py-2 text-sm font-medium text-md-on-surface hover:bg-md-surface dark:border-[#344051] dark:text-gray-100 dark:hover:bg-[#1b2430]"
                             >
                                 Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showAddModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                    <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-md3-2 dark:bg-[#11161d]">
+                        <div className="mb-4 flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-md-on-surface dark:text-white">
+                                Add Your Own Job Application
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowAddModal(false)}
+                                className="btn-ripple rounded-lg px-2 py-1 text-sm text-md-subtitle hover:bg-gray-100 dark:hover:bg-[#1b2430]"
+                            >
+                                Close
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                            <label className="text-sm text-md-on-surface dark:text-gray-200">
+                                Company
+                                <input
+                                    className="mt-1 min-h-[44px] w-full rounded-2xl border border-gray-200 px-3 text-sm shadow-sm dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100"
+                                    value={addForm.company}
+                                    onChange={(event) =>
+                                        setAddForm((prev) => ({
+                                            ...prev,
+                                            company: event.target.value,
+                                        }))
+                                    }
+                                />
+                            </label>
+                            <label className="text-sm text-md-on-surface dark:text-gray-200">
+                                Job Title
+                                <input
+                                    className="mt-1 min-h-[44px] w-full rounded-2xl border border-gray-200 px-3 text-sm shadow-sm dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100"
+                                    value={addForm.title}
+                                    onChange={(event) =>
+                                        setAddForm((prev) => ({
+                                            ...prev,
+                                            title: event.target.value,
+                                        }))
+                                    }
+                                />
+                            </label>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                            <label className="text-sm text-md-on-surface dark:text-gray-200">
+                                Job Posting URL
+                                <input
+                                    className="mt-1 min-h-[44px] w-full rounded-2xl border border-gray-200 px-3 text-sm shadow-sm dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100"
+                                    value={addForm.url}
+                                    onChange={(event) =>
+                                        setAddForm((prev) => ({
+                                            ...prev,
+                                            url: event.target.value,
+                                        }))
+                                    }
+                                    placeholder="https://..."
+                                />
+                            </label>
+                            <button
+                                type="button"
+                                onClick={handleParseFromLink}
+                                disabled={parsingLink}
+                                className="btn-ripple mt-6 min-h-[44px] rounded-2xl border border-gray-200 px-4 text-sm font-medium text-md-on-surface hover:bg-md-surface disabled:opacity-60 dark:border-[#344051] dark:text-gray-100 dark:hover:bg-[#1b2430]"
+                            >
+                                {parsingLink ? "Parsing..." : "Parse Link"}
+                            </button>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                            <label className="text-sm text-md-on-surface dark:text-gray-200">
+                                Skills (comma-separated)
+                                <input
+                                    className="mt-1 min-h-[44px] w-full rounded-2xl border border-gray-200 px-3 text-sm shadow-sm dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100"
+                                    value={addForm.tech_tags}
+                                    onChange={(event) =>
+                                        setAddForm((prev) => ({
+                                            ...prev,
+                                            tech_tags: event.target.value,
+                                        }))
+                                    }
+                                />
+                            </label>
+                            <label className="text-sm text-md-on-surface dark:text-gray-200">
+                                Stage
+                                <select
+                                    className="mt-1 min-h-[44px] w-full rounded-2xl border border-gray-200 px-3 text-sm shadow-sm dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100"
+                                    value={addForm.status}
+                                    onChange={(event) =>
+                                        setAddForm((prev) => ({
+                                            ...prev,
+                                            status: event.target
+                                                .value as ApplicationStatus,
+                                        }))
+                                    }
+                                >
+                                    {COLUMNS.map((statusOption) => (
+                                        <option
+                                            key={statusOption.key}
+                                            value={statusOption.key}
+                                        >
+                                            {statusOption.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        </div>
+
+                        <label className="mt-3 block text-sm text-md-on-surface dark:text-gray-200">
+                            Description
+                            <textarea
+                                rows={5}
+                                className="mt-1 w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm shadow-sm dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100"
+                                value={addForm.description}
+                                onChange={(event) =>
+                                    setAddForm((prev) => ({
+                                        ...prev,
+                                        description: event.target.value,
+                                    }))
+                                }
+                            />
+                        </label>
+
+                        <div className="mt-5 flex justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowAddModal(false)}
+                                className="btn-ripple min-h-[44px] rounded-2xl border border-gray-200 px-4 py-2 text-sm font-medium text-md-on-surface hover:bg-md-surface dark:border-[#344051] dark:text-gray-100 dark:hover:bg-[#1b2430]"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCreateManualApplication}
+                                disabled={submittingAdd}
+                                className="btn-ripple min-h-[44px] rounded-2xl bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-60"
+                            >
+                                {submittingAdd ? "Adding..." : "Add to Tracker"}
                             </button>
                         </div>
                     </div>
