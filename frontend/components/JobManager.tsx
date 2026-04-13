@@ -339,7 +339,7 @@ export default function JobManager() {
                             .map((job) => (
                                 <div
                                     key={job.id}
-                                    className="rounded-2xl border border-primary/20 bg-white p-4 transition-colors hover:border-primary/40 hover:bg-gray-50 dark:border-blue-400/30 dark:bg-[#132244] dark:hover:border-blue-300/50 dark:hover:bg-[#172849]"
+                                    className="rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-[#2d4068] dark:bg-[#132244] dark:hover:bg-[#172849]"
                                 >
                                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                         <div className="min-w-0">
