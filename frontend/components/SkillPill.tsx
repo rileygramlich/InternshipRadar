@@ -5,11 +5,11 @@ type SkillPillProps = {
 
 export function SkillPill({ skill, matched }: SkillPillProps) {
     return matched ? (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#E6F4EA] text-[#137333]">
             {skill}
         </span>
     ) : (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-500">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#FCE8E6] text-[#C5221F]">
             {skill}
         </span>
     );

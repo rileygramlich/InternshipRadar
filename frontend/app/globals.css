@@ -11,28 +11,30 @@
 html,
 body {
     height: 100%;
-    font-family:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-        "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-        sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-    background-color: #f5f7fa;
+    color: #1f2937;
+    background-attachment: fixed;
 }
 
 @layer base {
     [class~="dark"] {
         color-scheme: dark;
     }
+
+    ::selection {
+        background: rgba(47, 107, 255, 0.18);
+        color: #0f172a;
+    }
 }
 
 @layer components {
     .dark {
         --tw-bg-opacity: 1;
-        background-color: #0f172a;
+        background-color: #050816;
     }
 
     .hide-scrollbar {
@@ -42,5 +44,13 @@ body {
 
     .hide-scrollbar::-webkit-scrollbar {
         display: none;
+    }
+
+    .btn-ripple {
+        @apply transition-all duration-150 active:scale-[0.97];
+    }
+
+    .glass-panel {
+        @apply border border-white/50 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-white/5;
     }
 }
