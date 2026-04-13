@@ -16,18 +16,25 @@ body {
 }
 
 body {
+    color: #1f2937;
+    background-attachment: fixed;
 }
 
 @layer base {
     [class~="dark"] {
         color-scheme: dark;
     }
+
+    ::selection {
+        background: rgba(47, 107, 255, 0.18);
+        color: #0f172a;
+    }
 }
 
 @layer components {
     .dark {
         --tw-bg-opacity: 1;
-        background-color: #0f172a;
+        background-color: #050816;
     }
 
     .hide-scrollbar {
@@ -41,5 +48,9 @@ body {
 
     .btn-ripple {
         @apply transition-all duration-150 active:scale-[0.97];
+    }
+
+    .glass-panel {
+        @apply border border-white/50 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-white/5;
     }
 }

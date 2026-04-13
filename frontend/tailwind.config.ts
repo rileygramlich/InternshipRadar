@@ -10,27 +10,22 @@ const config: Config = {
         extend: {
             colors: {
                 primary: {
-                    DEFAULT: "#1A73E8",
-                    dark: "#1557B0",
-                    light: "#E8F0FE",
+                    DEFAULT: "#2F6BFF",
+                    dark: "#1749C7",
+                    light: "#E3ECFF",
                 },
-                "md-surface": "#F8F9FA",
-                "md-on-surface": "#202124",
-                "md-subtitle": "#5F6368",
+                "md-surface": "#F7F2EA",
+                "md-on-surface": "#1F2937",
+                "md-subtitle": "#667085",
             },
             fontFamily: {
-                sans: [
-                    "Inter",
-                    "Roboto",
-                    "-apple-system",
-                    "BlinkMacSystemFont",
-                    "Segoe UI",
-                    "sans-serif",
-                ],
+                sans: ["var(--font-sans)", "ui-sans-serif", "system-ui"],
             },
             boxShadow: {
-                "md3-1": "0 1px 2px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.10)",
-                "md3-2": "0 2px 6px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.08)",
+                "md3-1":
+                    "0 1px 2px rgba(15, 23, 42, 0.06), 0 10px 24px rgba(15, 23, 42, 0.05)",
+                "md3-2":
+                    "0 4px 10px rgba(15, 23, 42, 0.08), 0 18px 36px rgba(15, 23, 42, 0.10)",
             },
         },
     },

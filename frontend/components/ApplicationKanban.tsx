@@ -37,16 +37,36 @@ type Column = {
 };
 
 const COLUMNS: Column[] = [
-    { key: "saved", label: "Saved", accentClass: "border-l-slate-400", dotClass: "bg-slate-400" },
-    { key: "applied", label: "Applied", accentClass: "border-l-blue-400", dotClass: "bg-blue-400" },
+    {
+        key: "saved",
+        label: "Saved",
+        accentClass: "border-slate-400 dark:border-slate-500",
+        dotClass: "bg-slate-400",
+    },
+    {
+        key: "applied",
+        label: "Applied",
+        accentClass: "border-blue-400 dark:border-blue-500",
+        dotClass: "bg-blue-400",
+    },
     {
         key: "interview",
         label: "Interview",
-        accentClass: "border-l-amber-400",
+        accentClass: "border-amber-400 dark:border-amber-500",
         dotClass: "bg-amber-400",
     },
-    { key: "offer", label: "Offer", accentClass: "border-l-emerald-400", dotClass: "bg-emerald-400" },
-    { key: "rejected", label: "Rejected", accentClass: "border-l-rose-400", dotClass: "bg-rose-400" },
+    {
+        key: "offer",
+        label: "Offer",
+        accentClass: "border-emerald-400 dark:border-emerald-500",
+        dotClass: "bg-emerald-400",
+    },
+    {
+        key: "rejected",
+        label: "Rejected",
+        accentClass: "border-rose-400 dark:border-rose-500",
+        dotClass: "bg-rose-400",
+    },
 ];
 
 export default function ApplicationKanban() {
@@ -72,7 +92,6 @@ export default function ApplicationKanban() {
             if (!res.ok) {
                 throw new Error(json.error || "Failed to load applications");
             }
-
             const apps: Application[] = Array.isArray(json.data)
                 ? json.data
                 : [];
@@ -337,11 +356,14 @@ export default function ApplicationKanban() {
                         key={column.key}
                         onDragOver={(event) => event.preventDefault()}
                         onDrop={onDropToColumn(column.key)}
-                        className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 shadow-md3-1 dark:bg-gray-800 lg:w-auto lg:shrink lg:snap-none"
+                        className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 shadow-md3-1 dark:bg-[#132244] lg:w-auto lg:shrink lg:snap-none"
                     >
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
-                                <span className={`h-2.5 w-2.5 rounded-full ${column.dotClass}`} aria-hidden="true" />
+                                <span
+                                    className={`h-2.5 w-2.5 rounded-full ${column.dotClass}`}
+                                    aria-hidden="true"
+                                />
                                 <h3 className="text-sm font-semibold text-md-on-surface dark:text-gray-200">
                                     {column.label}
                                 </h3>
@@ -372,7 +394,7 @@ export default function ApplicationKanban() {
                                         }}
                                         onDragEnd={() => setDraggingId(null)}
                                         className={[
-                                            "cursor-grab rounded-2xl border-l-4 bg-white p-3 shadow-md3-1 transition-shadow hover:shadow-md3-2 active:cursor-grabbing dark:bg-gray-900",
+                                            "cursor-grab rounded-2xl border bg-white p-3 shadow-md3-1 transition-shadow hover:shadow-md3-2 active:cursor-grabbing dark:bg-[#0d1730]",
                                             column.accentClass,
                                             updatingIds[application.id]
                                                 ? "opacity-60"
@@ -443,7 +465,7 @@ export default function ApplicationKanban() {
 
                                         <div className="mt-2">
                                             <select
-                                                className="min-h-[44px] w-full rounded-2xl border border-gray-200 px-2 text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                                                className="min-h-[44px] w-full rounded-2xl border border-gray-200 px-2 text-xs dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100"
                                                 value={application.status}
                                                 onChange={(event) => {
                                                     if (
@@ -495,8 +517,8 @@ export default function ApplicationKanban() {
             {/* Confirmation Dialog */}
             {confirmDialog && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-                    <div className="mx-4 w-full max-w-sm rounded-2xl bg-white shadow-md3-2 dark:bg-gray-900">
-                        <div className="border-b border-gray-100 dark:border-gray-700 px-6 py-4">
+                    <div className="mx-4 w-full max-w-sm rounded-2xl bg-white shadow-md3-2 dark:bg-[#0d1730]">
+                        <div className="border-b border-gray-100 dark:border-[#22335a] px-6 py-4">
                             <h3 className="text-lg font-semibold text-md-on-surface dark:text-white">
                                 Remove Job Posting
                             </h3>
@@ -517,7 +539,7 @@ export default function ApplicationKanban() {
                                 This action cannot be undone.
                             </p>
                         </div>
-                        <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4 dark:border-gray-700">
+                        <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4 dark:border-[#22335a]">
                             <button
                                 onClick={confirmDelete}
                                 disabled={
@@ -531,7 +553,7 @@ export default function ApplicationKanban() {
                             </button>
                             <button
                                 onClick={() => setConfirmDialog(null)}
-                                className="btn-ripple min-h-[44px] rounded-2xl border border-gray-200 px-4 py-2 text-sm font-medium text-md-on-surface hover:bg-md-surface dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                                className="btn-ripple min-h-[44px] rounded-2xl border border-gray-200 px-4 py-2 text-sm font-medium text-md-on-surface hover:bg-md-surface dark:border-[#2d4068] dark:text-gray-100 dark:hover:bg-[#132244]"
                             >
                                 Cancel
                             </button>

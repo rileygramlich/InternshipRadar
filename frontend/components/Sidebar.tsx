@@ -99,7 +99,7 @@ export default function Sidebar() {
 
     return (
         <>
-            <aside className="hidden md:flex md:fixed md:left-0 md:top-0 md:h-screen md:w-64 md:flex-col md:bg-white md:shadow-md3-1 dark:md:bg-gray-900">
+            <aside className="hidden md:flex md:fixed md:left-0 md:top-0 md:h-screen md:w-64 md:flex-col md:bg-white md:shadow-md3-1 dark:md:bg-[#0b1530]">
                 <div className="p-6 lg:p-8">
                     <h1 className="text-xl font-bold text-md-on-surface dark:text-white lg:text-2xl">
                         Radar
@@ -139,8 +139,8 @@ export default function Sidebar() {
                     </ul>
                 </nav>
 
-                <div className="mt-auto border-t border-gray-100 p-4 dark:border-gray-700">
-                    <div className="rounded-2xl bg-md-surface px-4 py-3 dark:bg-gray-800">
+                <div className="mt-auto border-t border-gray-100 p-4 dark:border-[#22335a]">
+                    <div className="rounded-2xl bg-md-surface px-4 py-3 dark:bg-[#122143]">
                         <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                                 <p className="truncate text-sm font-medium text-md-on-surface dark:text-white">
@@ -164,7 +164,7 @@ export default function Sidebar() {
                                             )
                                         }
                                         aria-label="Toggle dark mode"
-                                        className="btn-ripple min-h-[44px] min-w-[44px] rounded-xl p-2 text-md-subtitle transition-colors hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+                                        className="btn-ripple min-h-[44px] min-w-[44px] rounded-xl p-2 text-md-subtitle transition-colors hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-[#1a2c52]"
                                     >
                                         {resolvedTheme === "dark" ? "☀️" : "🌙"}
                                     </button>
@@ -175,7 +175,7 @@ export default function Sidebar() {
                             <div className="mt-3 grid grid-cols-2 gap-2">
                                 <button
                                     onClick={handleSwitchUser}
-                                    className="btn-ripple min-h-[44px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-md-on-surface hover:bg-md-surface disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                    className="btn-ripple min-h-[44px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-md-on-surface hover:bg-md-surface disabled:opacity-60 dark:border-[#2d4068] dark:bg-[#172849] dark:text-gray-100 dark:hover:bg-[#21395f]"
                                     disabled={authLoading}
                                 >
                                     Switch user
@@ -193,7 +193,7 @@ export default function Sidebar() {
                 </div>
             </aside>
 
-            <nav className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around border-t border-gray-100 bg-white px-2 py-2 dark:border-gray-700 dark:bg-gray-900 md:hidden">
+            <nav className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around border-t border-gray-100 bg-white px-2 py-2 dark:border-[#22335a] dark:bg-[#0b1530] md:hidden">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (

@@ -276,7 +276,7 @@ export default function JobManager() {
 
     return (
         <div className="space-y-4 md:space-y-6">
-            <div className="rounded-2xl bg-white p-4 shadow-md3-1 dark:bg-gray-900 md:p-6">
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 md:p-6 dark:border-[#2d4068] dark:bg-[#0d1730]">
                 <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <h2 className="text-xl font-semibold text-md-on-surface dark:text-white md:text-2xl lg:text-3xl">
                         Jobs
@@ -312,7 +312,7 @@ export default function JobManager() {
                         Default Application Status
                     </label>
                     <select
-                        className="mt-1 min-h-[44px] w-full rounded-2xl border border-gray-200 px-3 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 md:w-72"
+                        className="mt-1 min-h-[44px] w-full rounded-2xl border border-gray-200 px-3 text-sm shadow-sm dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 md:w-72"
                         value={quickApplyStatus}
                         onChange={(e) =>
                             setQuickApplyStatus(
@@ -339,7 +339,7 @@ export default function JobManager() {
                             .map((job) => (
                                 <div
                                     key={job.id}
-                                    className="rounded-2xl bg-white p-4 shadow-md3-1 transition-shadow hover:shadow-md3-2 dark:bg-gray-800"
+                                    className="rounded-2xl border border-primary/20 bg-white p-4 transition-colors hover:border-primary/40 hover:bg-gray-50 dark:border-blue-400/30 dark:bg-[#132244] dark:hover:border-blue-300/50 dark:hover:bg-[#172849]"
                                 >
                                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                         <div className="min-w-0">
