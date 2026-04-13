@@ -31,6 +31,24 @@ type PendingApplicationSave = {
     status: ApplicationStatus;
 };
 
+function calculateSkillMatchScore(
+    techTags: string[] | null | undefined,
+    profileSkills: string[],
+) {
+    if (!Array.isArray(techTags) || techTags.length === 0) {
+        return null;
+    }
+
+    const normalizedProfileSkills = new Set(
+        profileSkills.map((skill) => skill.trim().toLowerCase()),
+    );
+    const matchedCount = techTags.filter((tag) =>
+        normalizedProfileSkills.has(tag.trim().toLowerCase()),
+    ).length;
+
+    return (matchedCount / techTags.length) * 100;
+}
+
 const pendingApplicationSaveKey = "internshipRadar.pendingApplicationSave";
 
 function readPendingApplicationSave() {
@@ -352,11 +370,20 @@ export default function JobManager() {
     );
 
     const visibleJobs = useMemo(() => {
-        let list = jobs.filter((job) => !savedJobIds.has(job.id));
+        let list = jobs
+            .filter((job) => !savedJobIds.has(job.id))
+            .map((job) => ({
+                ...job,
+                computed_match_percentage: calculateSkillMatchScore(
+                    job.tech_tags,
+                    profileSkills,
+                ),
+            }));
 
         if (selectedLocations.length > 0) {
             list = list.filter(
-                (job) => job.location && selectedLocations.includes(job.location),
+                (job) =>
+                    job.location && selectedLocations.includes(job.location),
             );
         }
 
@@ -372,7 +399,9 @@ export default function JobManager() {
 
         if (sortBy === "match_score") {
             list = [...list].sort(
-                (a, b) => (b.match_percentage ?? 0) - (a.match_percentage ?? 0),
+                (a, b) =>
+                    (b.computed_match_percentage ?? 0) -
+                    (a.computed_match_percentage ?? 0),
             );
         } else {
             list = [...list].sort(
@@ -383,7 +412,14 @@ export default function JobManager() {
         }
 
         return list;
-    }, [jobs, savedJobIds, selectedLocations, selectedTerms, showOpenOnly, sortBy]);
+    }, [
+        jobs,
+        savedJobIds,
+        selectedLocations,
+        selectedTerms,
+        showOpenOnly,
+        sortBy,
+    ]);
 
     return (
         <div className="space-y-4 md:space-y-6">
@@ -506,7 +542,9 @@ export default function JobManager() {
                                     <input
                                         type="checkbox"
                                         className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                        checked={selectedLocations.includes(loc)}
+                                        checked={selectedLocations.includes(
+                                            loc,
+                                        )}
                                         onChange={() => toggleLocation(loc)}
                                     />
                                     <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -589,7 +627,9 @@ export default function JobManager() {
                                     </div>
                                     <div className="flex flex-shrink-0 items-center gap-2">
                                         <MatchScoreBadge
-                                            score={job.match_percentage}
+                                            score={
+                                                job.computed_match_percentage
+                                            }
                                         />
                                         {job.url && (
                                             <a
