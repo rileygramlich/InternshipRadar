@@ -16,6 +16,20 @@ type Profile = {
     created_at: string;
 };
 
+function profileToEdits(data: Profile): EditableFields {
+    return {
+        name: data.name ?? "",
+        email: data.email ?? "",
+        discord_webhook_url: data.discord_webhook_url ?? "",
+        skills: (data.skills || []).join(", "),
+        location_preference: data.location_preference ?? "",
+        experience_level: data.experience_level ?? "",
+        remote_preference: Boolean(data.remote_preference),
+        about: data.about ?? "",
+        profile_photo_url: data.profile_photo_url ?? "",
+    };
+}
+
 type EditableFields = {
     name: string;
     email: string;
@@ -46,6 +60,58 @@ async function parseApiResponse(res: Response) {
     }
 }
 
+function arraysEqual(a: string[], b: string[]) {
+    return (
+        a.length === b.length && a.every((value, index) => value === b[index])
+    );
+}
+
+function buildUpdatePayload(edits: EditableFields, base: EditableFields) {
+    const payload: Record<string, unknown> = {};
+
+    if (edits.name.trim() !== base.name.trim()) {
+        payload.name = edits.name;
+    }
+
+    if (edits.discord_webhook_url !== base.discord_webhook_url) {
+        payload.discord_webhook_url = edits.discord_webhook_url;
+    }
+
+    const nextSkills = edits.skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    const baseSkills = base.skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    if (!arraysEqual(nextSkills, baseSkills)) {
+        payload.skills = nextSkills;
+    }
+
+    if (edits.location_preference !== base.location_preference) {
+        payload.location_preference = edits.location_preference;
+    }
+
+    if (edits.experience_level !== base.experience_level) {
+        payload.experience_level = edits.experience_level;
+    }
+
+    if (edits.remote_preference !== base.remote_preference) {
+        payload.remote_preference = edits.remote_preference;
+    }
+
+    if (edits.about !== base.about) {
+        payload.about = edits.about;
+    }
+
+    if (edits.profile_photo_url !== base.profile_photo_url) {
+        payload.profile_photo_url = edits.profile_photo_url;
+    }
+
+    return payload;
+}
+
 export default function ProfileManager() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(false);
@@ -64,7 +130,6 @@ export default function ProfileManager() {
     async function refresh() {
         setLoading(true);
         setError(null);
-        setSuccess(null);
         try {
             const res = await fetch("/api/profiles/me", { cache: "no-store" });
             const json = (await parseApiResponse(res)) as {
@@ -78,17 +143,7 @@ export default function ProfileManager() {
                 throw new Error("Profile response is missing data.");
             }
             setProfile(data);
-            setEdits({
-                name: data.name ?? "",
-                email: data.email ?? "",
-                discord_webhook_url: data.discord_webhook_url ?? "",
-                skills: (data.skills || []).join(", "),
-                location_preference: data.location_preference ?? "",
-                experience_level: data.experience_level ?? "",
-                remote_preference: Boolean(data.remote_preference),
-                about: data.about ?? "",
-                profile_photo_url: data.profile_photo_url ?? "",
-            });
+            setEdits(profileToEdits(data));
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "Failed to load profile",
@@ -160,8 +215,18 @@ export default function ProfileManager() {
 
     async function handleUpdate() {
         const update = edits;
-        if (!update) return;
-        if (!update.name.trim()) {
+        if (!update || !profile) return;
+
+        const base = profileToEdits(profile);
+        const payload = buildUpdatePayload(update, base);
+
+        if (Object.keys(payload).length === 0) {
+            setSuccess("No changes to save.");
+            setError(null);
+            return;
+        }
+
+        if (typeof payload.name === "string" && !payload.name.trim()) {
             setError("Name is required.");
             return;
         }
@@ -173,27 +238,20 @@ export default function ProfileManager() {
             const res = await fetch("/api/profiles/me", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: update.name,
-                    discord_webhook_url: update.discord_webhook_url,
-                    skills: update.skills
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    location_preference: update.location_preference,
-                    experience_level: update.experience_level,
-                    remote_preference: update.remote_preference,
-                    about: update.about,
-                    profile_photo_url: update.profile_photo_url,
-                }),
+                body: JSON.stringify(payload),
             });
             const json = (await parseApiResponse(res)) as {
                 error?: string;
+                data?: Profile;
             } | null;
             if (!res.ok)
                 throw new Error(json?.error || "Failed to update profile");
+
+            if (json?.data) {
+                setProfile(json.data);
+                setEdits(profileToEdits(json.data));
+            }
             setSuccess("Profile settings updated.");
-            await refresh();
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "Failed to update profile",
@@ -237,18 +295,9 @@ export default function ProfileManager() {
                 </label>
             </div>
             <div className="rounded-2xl bg-white p-6 shadow-md3-1 dark:bg-[#0d1730]">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-md-on-surface dark:text-white">
-                        Profile Settings
-                    </h2>
-                    <button
-                        onClick={refresh}
-                        className="btn-ripple text-sm text-primary dark:text-blue-400 hover:text-primary-dark dark:hover:text-blue-300 rounded-xl px-3 py-1 hover:bg-primary-light dark:hover:bg-blue-900/30 transition-colors"
-                        disabled={loading}
-                    >
-                        {loading ? "Refreshing..." : "Refresh"}
-                    </button>
-                </div>
+                <h2 className="text-xl font-semibold text-md-on-surface dark:text-white mb-4">
+                    Profile Settings
+                </h2>
                 {error && (
                     <p className="text-sm text-red-600 dark:text-red-400 mb-3">
                         {error}

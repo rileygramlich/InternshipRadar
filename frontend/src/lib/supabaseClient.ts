@@ -41,6 +41,10 @@ export async function createProfile(
     discord_webhook_url: string,
     skills: string[],
     location_preference: string,
+    experience_level: string | null = null,
+    remote_preference: boolean = false,
+    about: string = "",
+    profile_photo_url: string = "",
 ) {
     const { data, error } = await supabase
         .from("profiles")
@@ -51,6 +55,10 @@ export async function createProfile(
                 discord_webhook_url,
                 skills,
                 location_preference,
+                experience_level,
+                remote_preference,
+                about,
+                profile_photo_url,
             },
         ])
         .select();
@@ -78,6 +86,10 @@ export async function updateProfile(
         discord_webhook_url?: string;
         skills?: string[];
         location_preference?: string;
+        experience_level?: string;
+        remote_preference?: boolean;
+        about?: string;
+        profile_photo_url?: string;
     },
 ) {
     const { data, error } = await supabase

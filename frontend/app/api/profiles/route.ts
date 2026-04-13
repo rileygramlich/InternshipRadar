@@ -41,12 +41,20 @@ export async function POST(req: NextRequest) {
             discord_webhook_url,
             skills,
             location_preference,
+            experience_level,
+            remote_preference,
+            about,
+            profile_photo_url,
         }: {
             name?: string;
             email?: string;
             discord_webhook_url?: string;
             skills?: string[];
             location_preference?: string;
+            experience_level?: string;
+            remote_preference?: boolean;
+            about?: string;
+            profile_photo_url?: string;
         } = body;
 
         if (!(name ?? "").trim()) {
@@ -67,6 +75,10 @@ export async function POST(req: NextRequest) {
             discord_webhook_url ?? "",
             skills,
             location_preference ?? "",
+            experience_level ?? null,
+            typeof remote_preference === "boolean" ? remote_preference : false,
+            about ?? "",
+            profile_photo_url ?? "",
         );
 
         return NextResponse.json(profile, { status: 201 });

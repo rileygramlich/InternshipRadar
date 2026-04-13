@@ -36,6 +36,15 @@ function isUniqueViolation(error: unknown) {
     );
 }
 
+function isUndefinedColumn(error: unknown) {
+    return (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code?: string }).code === "42703"
+    );
+}
+
 async function getCurrentUserEmail() {
     if (!supabaseUrl || !anonKey) {
         throw new Error("Missing Supabase environment configuration.");
@@ -126,28 +135,52 @@ export async function PUT(req: NextRequest) {
             return badRequest("skills must be an array of strings.");
         }
 
+        if (
+            "remote_preference" in body &&
+            typeof body.remote_preference !== "boolean"
+        ) {
+            return badRequest("remote_preference must be a boolean.");
+        }
+
+        const profileColumns = new Set(Object.keys(profile ?? {}));
+
         const updates = {
-            ...(typeof body.name === "string"
+            ...(profileColumns.has("name") && typeof body.name === "string"
                 ? { name: body.name.trim() }
                 : {}),
-            ...(typeof body.discord_webhook_url === "string"
+            ...(profileColumns.has("discord_webhook_url") &&
+            typeof body.discord_webhook_url === "string"
                 ? { discord_webhook_url: body.discord_webhook_url }
                 : {}),
-            ...(Array.isArray(body.skills) ? { skills: body.skills } : {}),
-            ...(typeof body.location_preference === "string"
+            ...(profileColumns.has("skills") && Array.isArray(body.skills)
+                ? { skills: body.skills }
+                : {}),
+            ...(profileColumns.has("location_preference") &&
+            typeof body.location_preference === "string"
                 ? { location_preference: body.location_preference }
                 : {}),
-            ...(typeof body.experience_level === "string"
+            ...(profileColumns.has("experience_level") &&
+            typeof body.experience_level === "string"
                 ? { experience_level: body.experience_level }
                 : {}),
-            ...(typeof body.remote_preference === "boolean"
+            ...(profileColumns.has("remote_preference") &&
+            typeof body.remote_preference === "boolean"
                 ? { remote_preference: body.remote_preference }
                 : {}),
-            ...(typeof body.about === "string" ? { about: body.about } : {}),
-            ...(typeof body.profile_photo_url === "string"
+            ...(profileColumns.has("about") && typeof body.about === "string"
+                ? { about: body.about }
+                : {}),
+            ...(profileColumns.has("profile_photo_url") &&
+            typeof body.profile_photo_url === "string"
                 ? { profile_photo_url: body.profile_photo_url }
                 : {}),
         };
+
+        if (Object.keys(updates).length === 0) {
+            return badRequest(
+                "No valid profile fields were provided for update.",
+            );
+        }
 
         const { data, error } = await supabase
             .from("profiles")
@@ -159,6 +192,11 @@ export async function PUT(req: NextRequest) {
         if (error) {
             if (isUniqueViolation(error)) {
                 return conflict("Profile update conflicts with existing data.");
+            }
+            if (isUndefinedColumn(error)) {
+                return badRequest(
+                    "Profile schema is out of date. Run the latest Supabase profile migration and try again.",
+                );
             }
             throw error;
         }
