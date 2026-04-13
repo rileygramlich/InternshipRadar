@@ -110,7 +110,7 @@ function getSkillScore(jobSkills: string[] | null, profileSkills: string[]) {
 function getLocationScore(job: JobPosting, profileLocationPreference: string) {
     const preferredLocation = normalizeText(profileLocationPreference);
     if (!preferredLocation) {
-        return 0;
+        return 0.75;
     }
 
     const jobLocationText = normalizeText(
@@ -118,7 +118,7 @@ function getLocationScore(job: JobPosting, profileLocationPreference: string) {
     );
 
     if (!jobLocationText) {
-        return 0;
+        return 0.65;
     }
 
     if (preferredLocation.includes("remote")) {
@@ -140,6 +140,19 @@ function getLocationScore(job: JobPosting, profileLocationPreference: string) {
         includesAny(jobLocationText, locationTokens)
         ? 1
         : 0;
+}
+
+function applyScoreBoost(weightedScore: number) {
+    const boosted = 0.3 + weightedScore * 0.7;
+    return Math.min(1, Math.max(0, boosted));
+}
+
+function getScoreLabel(score: number) {
+    if (score >= 0.95) return "Excellent";
+    if (score >= 0.8) return "Strong";
+    if (score >= 0.65) return "Good";
+    if (score >= 0.5) return "Potential";
+    return "Low";
 }
 
 function normalizeExperienceLevel(value: string) {
@@ -252,6 +265,9 @@ export default function JobManager() {
     const [profileExperienceLevel, setProfileExperienceLevel] = useState("");
     const [pendingSave, setPendingSave] =
         useState<PendingApplicationSave | null>(null);
+    const [expandedMatchJobId, setExpandedMatchJobId] = useState<string | null>(
+        null,
+    );
     const autoSaveAttemptedRef = useRef(false);
 
     const getJobMatchScore = useCallback(
@@ -264,9 +280,34 @@ export default function JobManager() {
             const skillScore = getSkillScore(job.tech_tags, profileSkills);
 
             return Math.round(
-                (locationScore * 0.5 + levelScore * 0.25 + skillScore * 0.25) *
-                    100,
+                applyScoreBoost(
+                    locationScore * 0.5 + levelScore * 0.25 + skillScore * 0.25,
+                ) * 100,
             );
+        },
+        [profileExperienceLevel, profileLocationPreference, profileSkills],
+    );
+
+    const getJobScoreBreakdown = useCallback(
+        (job: JobPosting) => {
+            const locationScore = getLocationScore(
+                job,
+                profileLocationPreference,
+            );
+            const levelScore = getLevelScore(job, profileExperienceLevel);
+            const skillScore = getSkillScore(job.tech_tags, profileSkills);
+            const weightedScore =
+                locationScore * 0.5 + levelScore * 0.25 + skillScore * 0.25;
+            const boostedScore = applyScoreBoost(weightedScore);
+
+            return {
+                locationPercent: Math.round(locationScore * 100),
+                levelPercent: Math.round(levelScore * 100),
+                skillPercent: Math.round(skillScore * 100),
+                weightedPercent: Math.round(weightedScore * 100),
+                boostedPercent: Math.round(boostedScore * 100),
+                label: getScoreLabel(boostedScore),
+            };
         },
         [profileExperienceLevel, profileLocationPreference, profileSkills],
     );
@@ -564,60 +605,111 @@ export default function JobManager() {
                                 key={job.id}
                                 className="rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-[#344051] dark:bg-[#1b2430] dark:hover:bg-[#202938]"
                             >
-                                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                    <div className="min-w-0">
-                                        <p className="truncate text-base font-semibold text-md-on-surface dark:text-white md:text-lg">
-                                            {job.company}
-                                        </p>
-                                        <p className="line-clamp-2 text-sm text-md-subtitle dark:text-gray-300 md:text-base">
-                                            {job.title}
-                                        </p>
-                                        <p className="mt-1 text-xs font-medium text-primary dark:text-blue-300 md:text-sm">
-                                            Match: {getJobMatchScore(job)}%
-                                        </p>
-                                        <p className="text-xs text-md-subtitle dark:text-gray-400 md:text-sm">
-                                            Created:{" "}
-                                            {new Date(
-                                                job.created_at,
-                                            ).toLocaleString()}
-                                        </p>
-                                    </div>
-                                    {job.url && (
-                                        <a
-                                            href={job.url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="btn-ripple inline-flex min-h-[44px] items-center rounded-2xl px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary-light dark:text-blue-400 dark:hover:bg-blue-900/30"
-                                        >
-                                            View Job
-                                        </a>
-                                    )}
-                                </div>
-                                {job.description && (
-                                    <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm text-md-subtitle dark:text-gray-300">
-                                        {job.description}
-                                    </p>
-                                )}
-                                {Array.isArray(job.tech_tags) &&
-                                    job.tech_tags.length > 0 && (
-                                        <SkillGapIndicator
-                                            techTags={job.tech_tags}
-                                            profileSkills={profileSkills}
-                                        />
-                                    )}
-                                <div className="mt-3 flex justify-end">
-                                    <button
-                                        onClick={() =>
-                                            handleAddToApplications(job)
-                                        }
-                                        className="btn-ripple min-h-[44px] rounded-2xl bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
-                                        disabled={addingForJobId === job.id}
-                                    >
-                                        {addingForJobId === job.id
-                                            ? "Adding..."
-                                            : "Save Application"}
-                                    </button>
-                                </div>
+                                {(() => {
+                                    const score = getJobMatchScore(job);
+                                    const details = getJobScoreBreakdown(job);
+                                    const isExpanded =
+                                        expandedMatchJobId === job.id;
+
+                                    return (
+                                        <>
+                                            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-base font-semibold text-md-on-surface dark:text-white md:text-lg">
+                                                        {job.company}
+                                                    </p>
+                                                    <p className="line-clamp-2 text-sm text-md-subtitle dark:text-gray-300 md:text-base">
+                                                        {job.title}
+                                                    </p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setExpandedMatchJobId(
+                                                                isExpanded
+                                                                    ? null
+                                                                    : job.id,
+                                                            )
+                                                        }
+                                                        className="mt-1 inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-primary-light dark:text-blue-300 dark:hover:bg-blue-900/30 md:text-sm"
+                                                    >
+                                                        Match: {score}% (
+                                                        {details.label})
+                                                    </button>
+                                                </div>
+                                                {job.url && (
+                                                    <a
+                                                        href={job.url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="btn-ripple inline-flex min-h-[44px] items-center rounded-2xl px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary-light dark:text-blue-400 dark:hover:bg-blue-900/30"
+                                                    >
+                                                        View Job
+                                                    </a>
+                                                )}
+                                            </div>
+                                            {isExpanded && (
+                                                <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-md-subtitle dark:border-[#344051] dark:bg-[#11161d] dark:text-gray-300">
+                                                    <p>
+                                                        Score uses 50% location,
+                                                        25% level, and 25%
+                                                        skills.
+                                                    </p>
+                                                    <p className="mt-1">
+                                                        Location{" "}
+                                                        {
+                                                            details.locationPercent
+                                                        }
+                                                        % , Level{" "}
+                                                        {details.levelPercent}%,
+                                                        Skills{" "}
+                                                        {details.skillPercent}%.
+                                                    </p>
+                                                    <p className="mt-1">
+                                                        Weighted{" "}
+                                                        {
+                                                            details.weightedPercent
+                                                        }
+                                                        % , then boosted to{" "}
+                                                        {details.boostedPercent}
+                                                        %.
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {job.description && (
+                                                <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm text-md-subtitle dark:text-gray-300">
+                                                    {job.description}
+                                                </p>
+                                            )}
+                                            {Array.isArray(job.tech_tags) &&
+                                                job.tech_tags.length > 0 && (
+                                                    <SkillGapIndicator
+                                                        techTags={job.tech_tags}
+                                                        profileSkills={
+                                                            profileSkills
+                                                        }
+                                                    />
+                                                )}
+                                            <div className="mt-3 flex justify-end">
+                                                <button
+                                                    onClick={() =>
+                                                        handleAddToApplications(
+                                                            job,
+                                                        )
+                                                    }
+                                                    className="btn-ripple min-h-[44px] rounded-2xl bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                                                    disabled={
+                                                        addingForJobId ===
+                                                        job.id
+                                                    }
+                                                >
+                                                    {addingForJobId === job.id
+                                                        ? "Adding..."
+                                                        : "Save Application"}
+                                                </button>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         ))}
                         {visibleJobs.length === 0 && (

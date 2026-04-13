@@ -4,6 +4,9 @@ import OpenAI from "openai";
 
 export const runtime = "nodejs";
 
+const RESUME_INPUT_CHAR_LIMIT = 6000;
+const RESUME_MAX_OUTPUT_TOKENS = 350;
+
 function badRequest(message: string) {
     return NextResponse.json({ error: message }, { status: 400 });
 }
@@ -138,6 +141,11 @@ export async function POST(req: NextRequest) {
 
         let completion;
         try {
+            const compactResumeText = extractedText
+                .replace(/\s+/g, " ")
+                .trim()
+                .slice(0, RESUME_INPUT_CHAR_LIMIT);
+
             completion = await openai.chat.completions.create({
                 model: "gpt-4o-mini",
                 messages: [
@@ -156,11 +164,12 @@ export async function POST(req: NextRequest) {
 - "about": a concise 1-3 sentence professional summary based on the resume
 
 Resume text:
-${extractedText.slice(0, 8000)}`,
+${compactResumeText}`,
                     },
                 ],
                 response_format: { type: "json_object" },
                 temperature: 0.2,
+                max_tokens: RESUME_MAX_OUTPUT_TOKENS,
             });
             console.log("parse-resume: OpenAI request completed");
         } catch (error) {

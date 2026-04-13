@@ -44,7 +44,7 @@ export async function createProfile(
     skills: string[],
     location_preference: string,
     experience_level: string | null = null,
-    remote_preference: boolean = false,
+    remote_preference: boolean = true,
     about: string = "",
     profile_photo_url: string = "",
 ) {

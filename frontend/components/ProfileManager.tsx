@@ -24,7 +24,7 @@ function profileToEdits(data: Profile): EditableFields {
         skills: (data.skills || []).join(", "),
         location_preference: data.location_preference ?? "",
         experience_level: data.experience_level ?? "",
-        remote_preference: Boolean(data.remote_preference),
+        remote_preference: data.remote_preference !== false,
         about: data.about ?? "",
         profile_photo_url: data.profile_photo_url ?? "",
     };

@@ -3,6 +3,9 @@ import OpenAI from "openai";
 
 export const runtime = "nodejs";
 
+const JOB_LINK_INPUT_CHAR_LIMIT = 8000;
+const JOB_LINK_MAX_OUTPUT_TOKENS = 350;
+
 function badRequest(message: string) {
     return NextResponse.json({ error: message }, { status: 400 });
 }
@@ -63,7 +66,7 @@ export async function POST(req: NextRequest) {
         }
 
         const html = await pageRes.text();
-        const text = htmlToText(html).slice(0, 12000);
+        const text = htmlToText(html).slice(0, JOB_LINK_INPUT_CHAR_LIMIT);
 
         if (!text) {
             return badRequest("Could not read content from that URL.");
@@ -79,6 +82,7 @@ export async function POST(req: NextRequest) {
             model: "gpt-4o-mini",
             response_format: { type: "json_object" },
             temperature: 0.2,
+            max_tokens: JOB_LINK_MAX_OUTPUT_TOKENS,
             messages: [
                 {
                     role: "system",

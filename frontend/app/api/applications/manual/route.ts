@@ -11,13 +11,6 @@ import {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-type ApplicationStatus =
-    | "saved"
-    | "applied"
-    | "interview"
-    | "offer"
-    | "rejected";
-
 function badRequest(message: string) {
     return NextResponse.json({ error: message }, { status: 400 });
 }
@@ -85,7 +78,6 @@ export async function POST(req: NextRequest) {
             url?: string;
             description?: string;
             tech_tags?: string[];
-            status?: ApplicationStatus;
             match_score?: number;
         };
 
@@ -120,7 +112,7 @@ export async function POST(req: NextRequest) {
             profile.id,
             job.id,
             typeof body.match_score === "number" ? body.match_score : 0,
-            body.status ?? "applied",
+            "applied",
         );
 
         return NextResponse.json({ data: application }, { status: 201 });

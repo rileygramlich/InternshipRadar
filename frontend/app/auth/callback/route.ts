@@ -53,7 +53,7 @@ async function ensureProfileForUser(
                 skills: [],
                 location_preference: "",
                 experience_level: "",
-                remote_preference: false,
+                remote_preference: true,
                 about: "",
                 profile_photo_url: avatarUrl,
             });

@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
             skills,
             location_preference ?? "",
             experience_level ?? null,
-            typeof remote_preference === "boolean" ? remote_preference : false,
+            typeof remote_preference === "boolean" ? remote_preference : true,
             about ?? "",
             profile_photo_url ?? "",
         );

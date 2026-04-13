@@ -132,7 +132,7 @@ function getLocationScore(
     );
 
     if (!jobLocationText) {
-        return 0;
+        return 0.65;
     }
 
     if (remoteOnly) {
@@ -143,7 +143,7 @@ function getLocationScore(
 
     const preferredLocation = normalizeText(profileLocationPreference);
     if (!preferredLocation) {
-        return 0;
+        return 0.75;
     }
 
     if (preferredLocation.includes("remote")) {
@@ -165,6 +165,11 @@ function getLocationScore(
         includesAny(jobLocationText, locationTokens)
         ? 1
         : 0;
+}
+
+function applyScoreBoost(weightedScore: number) {
+    const boosted = 0.3 + weightedScore * 0.7;
+    return Math.min(1, Math.max(0, boosted));
 }
 
 function normalizeExperienceLevel(value: string) {
@@ -264,6 +269,7 @@ export default function ApplicationKanban() {
     const [applications, setApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showMatchScore, setShowMatchScore] = useState(true);
     const [profileSkills, setProfileSkills] = useState<string[]>([]);
     const [profileLocationPreference, setProfileLocationPreference] =
         useState("");
@@ -285,7 +291,6 @@ export default function ApplicationKanban() {
         url: "",
         description: "",
         tech_tags: "",
-        status: "applied" as ApplicationStatus,
     });
 
     const refresh = useCallback(async () => {
@@ -327,7 +332,7 @@ export default function ApplicationKanban() {
                             : "",
                     );
                     setProfileRemoteOnly(
-                        Boolean(profileJson.data.remote_preference),
+                        profileJson.data.remote_preference !== false,
                     );
                 } else {
                     setProfileSkills([]);
@@ -369,8 +374,9 @@ export default function ApplicationKanban() {
             );
 
             return Math.round(
-                (locationScore * 0.5 + levelScore * 0.25 + skillScore * 0.25) *
-                    100,
+                applyScoreBoost(
+                    locationScore * 0.5 + levelScore * 0.25 + skillScore * 0.25,
+                ) * 100,
             );
         },
         [
@@ -599,7 +605,7 @@ export default function ApplicationKanban() {
                     profile_id: "temp",
                     job_id: "temp",
                     match_score: 0,
-                    status: addForm.status,
+                    status: "applied",
                     created_at: new Date().toISOString(),
                     job_postings: {
                         id: "temp",
@@ -619,7 +625,7 @@ export default function ApplicationKanban() {
                     profile_id: "temp",
                     job_id: "temp",
                     match_score: 0,
-                    status: addForm.status,
+                    status: "applied",
                     created_at: new Date().toISOString(),
                     job_postings: {
                         id: "temp",
@@ -647,7 +653,6 @@ export default function ApplicationKanban() {
                     url: addForm.url.trim(),
                     description: addForm.description.trim(),
                     tech_tags: techTags,
-                    status: addForm.status,
                     match_score: matchScore,
                 }),
             });
@@ -664,7 +669,6 @@ export default function ApplicationKanban() {
                 url: "",
                 description: "",
                 tech_tags: "",
-                status: "applied",
             });
             await refresh();
         } catch (err) {
@@ -696,52 +700,62 @@ export default function ApplicationKanban() {
     return (
         <div className="space-y-4 overflow-x-hidden lg:space-y-6">
             {/* Analytics summary bar */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-primary-light px-4 py-3 text-sm text-md-on-surface dark:bg-blue-900 dark:text-gray-200">
-                {loading && applications.length === 0 ? (
-                    <>
-                        <div className="loading-shimmer h-4 w-28 rounded-lg" />
-                        <div className="loading-shimmer h-4 w-24 rounded-lg" />
-                        <div className="loading-shimmer h-4 w-28 rounded-lg" />
-                        <div className="loading-shimmer h-4 w-24 rounded-lg" />
-                    </>
-                ) : (
-                    <>
-                        {COLUMNS.map((col, index) => (
-                            <span
-                                key={col.key}
-                                className="flex items-center gap-1"
-                            >
-                                {index !== 0 && (
-                                    <span className="text-gray-300 dark:text-gray-600 select-none">
-                                        |
-                                    </span>
-                                )}
-                                <span className="font-semibold text-md-on-surface dark:text-white">
-                                    {analytics.counts[col.key]}
-                                </span>{" "}
-                                {col.label}
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl bg-primary-light px-4 py-3 text-sm text-md-on-surface dark:bg-blue-900 dark:text-gray-200">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    {loading && applications.length === 0 ? (
+                        <>
+                            <div className="loading-shimmer h-4 w-28 rounded-lg" />
+                            <div className="loading-shimmer h-4 w-24 rounded-lg" />
+                            <div className="loading-shimmer h-4 w-28 rounded-lg" />
+                            <div className="loading-shimmer h-4 w-24 rounded-lg" />
+                        </>
+                    ) : (
+                        <>
+                            {COLUMNS.map((col, index) => (
+                                <span
+                                    key={col.key}
+                                    className="flex items-center gap-1"
+                                >
+                                    {index !== 0 && (
+                                        <span className="text-gray-300 dark:text-gray-600 select-none">
+                                            |
+                                        </span>
+                                    )}
+                                    <span className="font-semibold text-md-on-surface dark:text-white">
+                                        {analytics.counts[col.key]}
+                                    </span>{" "}
+                                    {col.label}
+                                </span>
+                            ))}
+                            <span className="text-gray-300 dark:text-gray-600 select-none">
+                                |
                             </span>
-                        ))}
-                        <span className="text-gray-300 dark:text-gray-600 select-none">
-                            |
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <span className="font-semibold text-primary dark:text-blue-400">
-                                {analytics.conversionRate}%
-                            </span>{" "}
-                            Applied → Interview
-                        </span>
-                        <span className="text-gray-300 dark:text-gray-600 select-none">
-                            |
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <span className="font-semibold text-rose-700 dark:text-rose-400">
-                                {analytics.rejectionRate}%
-                            </span>{" "}
-                            Rejection Rate
-                        </span>
-                    </>
-                )}
+                            <span className="flex items-center gap-1">
+                                <span className="font-semibold text-primary dark:text-blue-400">
+                                    {analytics.conversionRate}%
+                                </span>{" "}
+                                Applied → Interview
+                            </span>
+                            <span className="text-gray-300 dark:text-gray-600 select-none">
+                                |
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <span className="font-semibold text-rose-700 dark:text-rose-400">
+                                    {analytics.rejectionRate}%
+                                </span>{" "}
+                                Rejection Rate
+                            </span>
+                        </>
+                    )}
+                </div>
+                <button
+                    type="button"
+                    onClick={() => setShowMatchScore((prev) => !prev)}
+                    className="btn-ripple inline-flex min-h-[36px] items-center rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-md-on-surface hover:bg-gray-100 dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100 dark:hover:bg-[#202938]"
+                    aria-pressed={showMatchScore}
+                >
+                    {showMatchScore ? "Hide Match Score" : "Show Match Score"}
+                </button>
             </div>
 
             {error && (
@@ -786,7 +800,7 @@ export default function ApplicationKanban() {
                               onDrop={onDropToColumn(column.key)}
                               className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#1b2430] lg:w-auto lg:shrink lg:snap-none"
                           >
-                              <div className="flex items-center justify-between mb-3">
+                              <div className="mb-3 flex items-center justify-between">
                                   <div className="flex items-center gap-2">
                                       <span
                                           className={`h-2.5 w-2.5 rounded-full ${column.dotClass}`}
@@ -796,25 +810,25 @@ export default function ApplicationKanban() {
                                           {column.label}
                                       </h3>
                                   </div>
-                                  <span className="text-xs px-2 py-0.5 rounded-full bg-white dark:bg-gray-700 text-md-subtitle dark:text-gray-300 shadow-sm">
-                                      {column.items.length}
-                                  </span>
-                              </div>
-                              {column.key === "applied" && (
-                                  <div className="mb-3 flex justify-end">
-                                      <button
-                                          type="button"
-                                          onClick={() => {
-                                              setError(null);
-                                              setShowAddModal(true);
-                                          }}
-                                          className="btn-ripple inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-base font-semibold text-md-on-surface hover:bg-gray-100 dark:border-[#344051] dark:bg-[#1b2430] dark:text-white dark:hover:bg-[#202938]"
-                                          aria-label="Add your own application"
-                                      >
-                                          +
-                                      </button>
+                                  <div className="flex items-center gap-2">
+                                      {column.key === "applied" && (
+                                          <button
+                                              type="button"
+                                              onClick={() => {
+                                                  setError(null);
+                                                  setShowAddModal(true);
+                                              }}
+                                              className="btn-ripple inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-base font-semibold text-md-on-surface hover:bg-gray-100 dark:border-[#344051] dark:bg-[#1b2430] dark:text-white dark:hover:bg-[#202938]"
+                                              aria-label="Add your own application"
+                                          >
+                                              +
+                                          </button>
+                                      )}
+                                      <span className="rounded-full bg-white px-2 py-0.5 text-xs text-md-subtitle shadow-sm dark:bg-gray-700 dark:text-gray-300">
+                                          {column.items.length}
+                                      </span>
                                   </div>
-                              )}
+                              </div>
 
                               <div className="space-y-3">
                                   {column.items.length === 0 ? (
@@ -897,13 +911,15 @@ export default function ApplicationKanban() {
                                                       </span>
                                                   </a>
                                               )}
-                                              <p className="text-xs text-md-subtitle dark:text-gray-400 mt-1">
-                                                  Match:{" "}
-                                                  {getApplicationMatchScore(
-                                                      application,
-                                                  )}
-                                                  %
-                                              </p>
+                                              {showMatchScore && (
+                                                  <p className="mt-1 text-xs text-md-subtitle dark:text-gray-400">
+                                                      Match:{" "}
+                                                      {getApplicationMatchScore(
+                                                          application,
+                                                      )}
+                                                      %
+                                                  </p>
+                                              )}
                                               <p className="text-xs text-md-subtitle dark:text-gray-500 mt-1">
                                                   {new Date(
                                                       application.created_at,
@@ -1090,7 +1106,7 @@ export default function ApplicationKanban() {
                             </button>
                         </div>
 
-                        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div className="mt-3 grid grid-cols-1 gap-3">
                             <label className="text-sm text-md-on-surface dark:text-gray-200">
                                 Skills (comma-separated)
                                 <input
@@ -1104,30 +1120,10 @@ export default function ApplicationKanban() {
                                     }
                                 />
                             </label>
-                            <label className="text-sm text-md-on-surface dark:text-gray-200">
-                                Stage
-                                <select
-                                    className="mt-1 min-h-[44px] w-full rounded-2xl border border-gray-200 px-3 text-sm shadow-sm dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100"
-                                    value={addForm.status}
-                                    onChange={(event) =>
-                                        setAddForm((prev) => ({
-                                            ...prev,
-                                            status: event.target
-                                                .value as ApplicationStatus,
-                                        }))
-                                    }
-                                >
-                                    {COLUMNS.map((statusOption) => (
-                                        <option
-                                            key={statusOption.key}
-                                            value={statusOption.key}
-                                        >
-                                            {statusOption.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
                         </div>
+                        <p className="mt-2 text-xs text-md-subtitle dark:text-gray-400">
+                            This will be added directly to the Applied column.
+                        </p>
 
                         <label className="mt-3 block text-sm text-md-on-surface dark:text-gray-200">
                             Description
