@@ -53,4 +53,43 @@ body {
     .glass-panel {
         @apply border border-white/50 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-white/5;
     }
+
+    .loading-shimmer {
+        position: relative;
+        overflow: hidden;
+        background-color: rgba(148, 163, 184, 0.22);
+    }
+
+    .loading-shimmer::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.55) 50%,
+            rgba(255, 255, 255, 0) 100%
+        );
+        animation: loading-shimmer-slide 1.4s ease-in-out infinite;
+    }
+
+    .dark .loading-shimmer {
+        background-color: rgba(51, 65, 85, 0.55);
+    }
+
+    .dark .loading-shimmer::after {
+        background: linear-gradient(
+            90deg,
+            rgba(148, 163, 184, 0) 0%,
+            rgba(148, 163, 184, 0.35) 50%,
+            rgba(148, 163, 184, 0) 100%
+        );
+    }
+}
+
+@keyframes loading-shimmer-slide {
+    100% {
+        transform: translateX(100%);
+    }
 }

@@ -521,37 +521,51 @@ export default function ApplicationKanban() {
         <div className="space-y-4 overflow-x-hidden lg:space-y-6">
             {/* Analytics summary bar */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-primary-light px-4 py-3 text-sm text-md-on-surface dark:bg-blue-900 dark:text-gray-200">
-                {COLUMNS.map((col, index) => (
-                    <span key={col.key} className="flex items-center gap-1">
-                        {index !== 0 && (
-                            <span className="text-gray-300 dark:text-gray-600 select-none">
-                                |
+                {loading && applications.length === 0 ? (
+                    <>
+                        <div className="loading-shimmer h-4 w-28 rounded-lg" />
+                        <div className="loading-shimmer h-4 w-24 rounded-lg" />
+                        <div className="loading-shimmer h-4 w-28 rounded-lg" />
+                        <div className="loading-shimmer h-4 w-24 rounded-lg" />
+                    </>
+                ) : (
+                    <>
+                        {COLUMNS.map((col, index) => (
+                            <span
+                                key={col.key}
+                                className="flex items-center gap-1"
+                            >
+                                {index !== 0 && (
+                                    <span className="text-gray-300 dark:text-gray-600 select-none">
+                                        |
+                                    </span>
+                                )}
+                                <span className="font-semibold text-md-on-surface dark:text-white">
+                                    {analytics.counts[col.key]}
+                                </span>{" "}
+                                {col.label}
                             </span>
-                        )}
-                        <span className="font-semibold text-md-on-surface dark:text-white">
-                            {analytics.counts[col.key]}
-                        </span>{" "}
-                        {col.label}
-                    </span>
-                ))}
-                <span className="text-gray-300 dark:text-gray-600 select-none">
-                    |
-                </span>
-                <span className="flex items-center gap-1">
-                    <span className="font-semibold text-primary dark:text-blue-400">
-                        {analytics.conversionRate}%
-                    </span>{" "}
-                    Applied → Interview
-                </span>
-                <span className="text-gray-300 dark:text-gray-600 select-none">
-                    |
-                </span>
-                <span className="flex items-center gap-1">
-                    <span className="font-semibold text-rose-700 dark:text-rose-400">
-                        {analytics.rejectionRate}%
-                    </span>{" "}
-                    Rejection Rate
-                </span>
+                        ))}
+                        <span className="text-gray-300 dark:text-gray-600 select-none">
+                            |
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <span className="font-semibold text-primary dark:text-blue-400">
+                                {analytics.conversionRate}%
+                            </span>{" "}
+                            Applied → Interview
+                        </span>
+                        <span className="text-gray-300 dark:text-gray-600 select-none">
+                            |
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <span className="font-semibold text-rose-700 dark:text-rose-400">
+                                {analytics.rejectionRate}%
+                            </span>{" "}
+                            Rejection Rate
+                        </span>
+                    </>
+                )}
             </div>
 
             {error && (
@@ -561,162 +575,210 @@ export default function ApplicationKanban() {
             )}
 
             <div className="-mx-4 flex snap-x snap-mandatory flex-nowrap gap-4 overflow-x-auto px-4 pb-2 hide-scrollbar lg:mx-0 lg:grid lg:grid-cols-5 lg:gap-4 lg:overflow-visible lg:px-0">
-                {columns.map((column) => (
-                    <div
-                        key={column.key}
-                        onDragOver={(event) => event.preventDefault()}
-                        onDrop={onDropToColumn(column.key)}
-                        className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#132244] lg:w-auto lg:shrink lg:snap-none"
-                    >
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                                <span
-                                    className={`h-2.5 w-2.5 rounded-full ${column.dotClass}`}
-                                    aria-hidden="true"
-                                />
-                                <h3 className="text-sm font-semibold text-md-on-surface dark:text-gray-200">
-                                    {column.label}
-                                </h3>
-                            </div>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-white dark:bg-gray-700 text-md-subtitle dark:text-gray-300 shadow-sm">
-                                {column.items.length}
-                            </span>
-                        </div>
+                {loading && applications.length === 0
+                    ? COLUMNS.map((column) => (
+                          <div
+                              key={`loading-${column.key}`}
+                              className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#132244] lg:w-auto lg:shrink lg:snap-none"
+                          >
+                              <div className="mb-3 flex items-center justify-between">
+                                  <div className="loading-shimmer h-4 w-20 rounded-lg" />
+                                  <div className="loading-shimmer h-5 w-8 rounded-full" />
+                              </div>
+                              <div className="space-y-3">
+                                  {Array.from({ length: 2 }).map((_, idx) => (
+                                      <div
+                                          key={`${column.key}-loading-card-${idx}`}
+                                          className="rounded-2xl border border-gray-200 bg-white p-3 dark:border-[#2d4068] dark:bg-[#0d1730]"
+                                      >
+                                          <div className="space-y-2">
+                                              <div className="loading-shimmer h-4 w-32 rounded-lg" />
+                                              <div className="loading-shimmer h-3 w-40 rounded-lg" />
+                                              <div className="loading-shimmer h-3 w-full rounded-lg" />
+                                              <div className="loading-shimmer h-3 w-5/6 rounded-lg" />
+                                              <div className="loading-shimmer h-9 w-full rounded-2xl" />
+                                          </div>
+                                      </div>
+                                  ))}
+                              </div>
+                          </div>
+                      ))
+                    : columns.map((column) => (
+                          <div
+                              key={column.key}
+                              onDragOver={(event) => event.preventDefault()}
+                              onDrop={onDropToColumn(column.key)}
+                              className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#132244] lg:w-auto lg:shrink lg:snap-none"
+                          >
+                              <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-2">
+                                      <span
+                                          className={`h-2.5 w-2.5 rounded-full ${column.dotClass}`}
+                                          aria-hidden="true"
+                                      />
+                                      <h3 className="text-sm font-semibold text-md-on-surface dark:text-gray-200">
+                                          {column.label}
+                                      </h3>
+                                  </div>
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-white dark:bg-gray-700 text-md-subtitle dark:text-gray-300 shadow-sm">
+                                      {column.items.length}
+                                  </span>
+                              </div>
 
-                        <div className="space-y-3">
-                            {column.items.length === 0 ? (
-                                <p className="text-xs text-md-subtitle dark:text-gray-500">
-                                    Drop applications here
-                                </p>
-                            ) : (
-                                column.items.map((application) => (
-                                    <div
-                                        key={application.id}
-                                        draggable
-                                        onDragStart={(event) => {
-                                            setDraggingId(application.id);
-                                            event.dataTransfer.setData(
-                                                "text/plain",
-                                                application.id,
-                                            );
-                                            event.dataTransfer.effectAllowed =
-                                                "move";
-                                        }}
-                                        onDragEnd={() => setDraggingId(null)}
-                                        className={[
-                                            "cursor-grab rounded-2xl border bg-white p-3 shadow-md3-1 transition-shadow hover:shadow-md3-2 active:cursor-grabbing dark:bg-[#0d1730]",
-                                            column.accentClass,
-                                            updatingIds[application.id]
-                                                ? "opacity-60"
-                                                : "opacity-100",
-                                        ].join(" ")}
-                                    >
-                                        <p className="mt-1 truncate text-sm font-semibold text-md-on-surface dark:text-white">
-                                            {application.job_postings
-                                                ?.company || "Unknown Company"}
-                                        </p>
-                                        <p className="line-clamp-2 text-xs text-md-subtitle dark:text-gray-300">
-                                            {application.job_postings?.title ||
-                                                "Unknown Job Title"}
-                                        </p>
-                                        {application.job_postings
-                                            ?.description && (
-                                            <p className="text-xs text-md-subtitle dark:text-gray-400 mt-1 line-clamp-3">
-                                                {
-                                                    application.job_postings
-                                                        .description
-                                                }
-                                            </p>
-                                        )}
-                                        {application.job_postings?.tech_tags &&
-                                            application.job_postings.tech_tags
-                                                .length > 0 && (
-                                                <SkillGapIndicator
-                                                    techTags={
-                                                        application.job_postings
-                                                            .tech_tags
-                                                    }
-                                                    profileSkills={
-                                                        profileSkills
-                                                    }
-                                                />
-                                            )}
-                                        {application.job_postings?.url && (
-                                            <a
-                                                href={
-                                                    application.job_postings.url
-                                                }
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="btn-ripple mt-2 inline-flex min-h-[44px] max-w-full items-center rounded-2xl px-3 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary-light dark:text-blue-400 dark:hover:bg-blue-900/30"
-                                            >
-                                                <span className="truncate">
-                                                    View Posting
-                                                </span>
-                                            </a>
-                                        )}
-                                        <p className="text-xs text-md-subtitle dark:text-gray-400 mt-1">
-                                            Match:{" "}
-                                            {getApplicationMatchScore(
-                                                application,
-                                            )}
-                                            %
-                                        </p>
-                                        <p className="text-xs text-md-subtitle dark:text-gray-500 mt-1">
-                                            {new Date(
-                                                application.created_at,
-                                            ).toLocaleDateString()}
-                                        </p>
+                              <div className="space-y-3">
+                                  {column.items.length === 0 ? (
+                                      <p className="text-xs text-md-subtitle dark:text-gray-500">
+                                          Drop applications here
+                                      </p>
+                                  ) : (
+                                      column.items.map((application) => (
+                                          <div
+                                              key={application.id}
+                                              draggable
+                                              onDragStart={(event) => {
+                                                  setDraggingId(application.id);
+                                                  event.dataTransfer.setData(
+                                                      "text/plain",
+                                                      application.id,
+                                                  );
+                                                  event.dataTransfer.effectAllowed =
+                                                      "move";
+                                              }}
+                                              onDragEnd={() =>
+                                                  setDraggingId(null)
+                                              }
+                                              className={[
+                                                  "cursor-grab rounded-2xl border bg-white p-3 shadow-md3-1 transition-shadow hover:shadow-md3-2 active:cursor-grabbing dark:bg-[#0d1730]",
+                                                  column.accentClass,
+                                                  updatingIds[application.id]
+                                                      ? "opacity-60"
+                                                      : "opacity-100",
+                                              ].join(" ")}
+                                          >
+                                              <p className="mt-1 truncate text-sm font-semibold text-md-on-surface dark:text-white">
+                                                  {application.job_postings
+                                                      ?.company ||
+                                                      "Unknown Company"}
+                                              </p>
+                                              <p className="line-clamp-2 text-xs text-md-subtitle dark:text-gray-300">
+                                                  {application.job_postings
+                                                      ?.title ||
+                                                      "Unknown Job Title"}
+                                              </p>
+                                              {application.job_postings
+                                                  ?.description && (
+                                                  <p className="text-xs text-md-subtitle dark:text-gray-400 mt-1 line-clamp-3">
+                                                      {
+                                                          application
+                                                              .job_postings
+                                                              .description
+                                                      }
+                                                  </p>
+                                              )}
+                                              {application.job_postings
+                                                  ?.tech_tags &&
+                                                  application.job_postings
+                                                      .tech_tags.length > 0 && (
+                                                      <SkillGapIndicator
+                                                          techTags={
+                                                              application
+                                                                  .job_postings
+                                                                  .tech_tags
+                                                          }
+                                                          profileSkills={
+                                                              profileSkills
+                                                          }
+                                                      />
+                                                  )}
+                                              {application.job_postings
+                                                  ?.url && (
+                                                  <a
+                                                      href={
+                                                          application
+                                                              .job_postings.url
+                                                      }
+                                                      target="_blank"
+                                                      rel="noreferrer"
+                                                      className="btn-ripple mt-2 inline-flex min-h-[44px] max-w-full items-center rounded-2xl px-3 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary-light dark:text-blue-400 dark:hover:bg-blue-900/30"
+                                                  >
+                                                      <span className="truncate">
+                                                          View Posting
+                                                      </span>
+                                                  </a>
+                                              )}
+                                              <p className="text-xs text-md-subtitle dark:text-gray-400 mt-1">
+                                                  Match:{" "}
+                                                  {getApplicationMatchScore(
+                                                      application,
+                                                  )}
+                                                  %
+                                              </p>
+                                              <p className="text-xs text-md-subtitle dark:text-gray-500 mt-1">
+                                                  {new Date(
+                                                      application.created_at,
+                                                  ).toLocaleDateString()}
+                                              </p>
 
-                                        <div className="mt-2">
-                                            <select
-                                                className="min-h-[44px] w-full rounded-2xl border border-gray-200 px-2 text-xs dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100"
-                                                value={application.status}
-                                                onChange={(event) => {
-                                                    if (
-                                                        event.target.value ===
-                                                        "delete"
-                                                    ) {
-                                                        handleDeleteJobPosting(
-                                                            application,
-                                                        );
-                                                        // Reset the select to its original status
-                                                        event.target.value =
-                                                            application.status;
-                                                    } else {
-                                                        updateStatus(
-                                                            application.id,
-                                                            event.target
-                                                                .value as ApplicationStatus,
-                                                        );
-                                                    }
-                                                }}
-                                                disabled={Boolean(
-                                                    updatingIds[application.id],
-                                                )}
-                                            >
-                                                {COLUMNS.map((statusOption) => (
-                                                    <option
-                                                        key={statusOption.key}
-                                                        value={statusOption.key}
-                                                    >
-                                                        {statusOption.label}
-                                                    </option>
-                                                ))}
-                                                <option
-                                                    value="delete"
-                                                    className="text-red-600"
-                                                >
-                                                    Remove Posting
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                ))}
+                                              <div className="mt-2">
+                                                  <select
+                                                      className="min-h-[44px] w-full rounded-2xl border border-gray-200 px-2 text-xs dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100"
+                                                      value={application.status}
+                                                      onChange={(event) => {
+                                                          if (
+                                                              event.target
+                                                                  .value ===
+                                                              "delete"
+                                                          ) {
+                                                              handleDeleteJobPosting(
+                                                                  application,
+                                                              );
+                                                              // Reset the select to its original status
+                                                              event.target.value =
+                                                                  application.status;
+                                                          } else {
+                                                              updateStatus(
+                                                                  application.id,
+                                                                  event.target
+                                                                      .value as ApplicationStatus,
+                                                              );
+                                                          }
+                                                      }}
+                                                      disabled={Boolean(
+                                                          updatingIds[
+                                                              application.id
+                                                          ],
+                                                      )}
+                                                  >
+                                                      {COLUMNS.map(
+                                                          (statusOption) => (
+                                                              <option
+                                                                  key={
+                                                                      statusOption.key
+                                                                  }
+                                                                  value={
+                                                                      statusOption.key
+                                                                  }
+                                                              >
+                                                                  {
+                                                                      statusOption.label
+                                                                  }
+                                                              </option>
+                                                          ),
+                                                      )}
+                                                      <option
+                                                          value="delete"
+                                                          className="text-red-600"
+                                                      >
+                                                          Remove Posting
+                                                      </option>
+                                                  </select>
+                                              </div>
+                                          </div>
+                                      ))
+                                  )}
+                              </div>
+                          </div>
+                      ))}
             </div>
 
             {/* Confirmation Dialog */}

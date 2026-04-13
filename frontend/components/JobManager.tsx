@@ -470,6 +470,8 @@ export default function JobManager() {
         await saveApplication(job, quickApplyStatus, getJobMatchScore(job));
     }
 
+    const visibleJobs = jobs.filter((job) => !savedJobIds.has(job.id));
+
     return (
         <div className="space-y-4 md:space-y-6">
             <div className="rounded-2xl border border-gray-200 bg-white p-4 md:p-6 dark:border-[#2d4068] dark:bg-[#0d1730]">
@@ -524,77 +526,101 @@ export default function JobManager() {
                     </select>
                 </div>
 
-                {jobs.length === 0 ? (
+                {loading && visibleJobs.length === 0 ? (
+                    <div className="space-y-4">
+                        {Array.from({ length: 3 }).map((_, idx) => (
+                            <div
+                                key={`job-loading-${idx}`}
+                                className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-[#2d4068] dark:bg-[#132244]"
+                            >
+                                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                    <div className="min-w-0 flex-1 space-y-2">
+                                        <div className="loading-shimmer h-5 w-40 rounded-lg" />
+                                        <div className="loading-shimmer h-4 w-56 rounded-lg" />
+                                        <div className="loading-shimmer h-4 w-24 rounded-lg" />
+                                        <div className="loading-shimmer h-3 w-36 rounded-lg" />
+                                    </div>
+                                    <div className="loading-shimmer h-10 w-24 rounded-2xl" />
+                                </div>
+                                <div className="mt-3 space-y-2">
+                                    <div className="loading-shimmer h-3 w-full rounded-lg" />
+                                    <div className="loading-shimmer h-3 w-11/12 rounded-lg" />
+                                    <div className="loading-shimmer h-3 w-3/4 rounded-lg" />
+                                </div>
+                                <div className="mt-3 flex justify-end">
+                                    <div className="loading-shimmer h-10 w-36 rounded-2xl" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : jobs.length === 0 ? (
                     <p className="text-md-subtitle dark:text-gray-400">
                         No job postings yet.
                     </p>
                 ) : (
                     <div className="space-y-4">
-                        {jobs
-                            .filter((job) => !savedJobIds.has(job.id))
-                            .map((job) => (
-                                <div
-                                    key={job.id}
-                                    className="rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-[#2d4068] dark:bg-[#132244] dark:hover:bg-[#172849]"
-                                >
-                                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                        <div className="min-w-0">
-                                            <p className="truncate text-base font-semibold text-md-on-surface dark:text-white md:text-lg">
-                                                {job.company}
-                                            </p>
-                                            <p className="line-clamp-2 text-sm text-md-subtitle dark:text-gray-300 md:text-base">
-                                                {job.title}
-                                            </p>
-                                            <p className="mt-1 text-xs font-medium text-primary dark:text-blue-300 md:text-sm">
-                                                Match: {getJobMatchScore(job)}%
-                                            </p>
-                                            <p className="text-xs text-md-subtitle dark:text-gray-400 md:text-sm">
-                                                Created:{" "}
-                                                {new Date(
-                                                    job.created_at,
-                                                ).toLocaleString()}
-                                            </p>
-                                        </div>
-                                        {job.url && (
-                                            <a
-                                                href={job.url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="btn-ripple inline-flex min-h-[44px] items-center rounded-2xl px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary-light dark:text-blue-400 dark:hover:bg-blue-900/30"
-                                            >
-                                                View Job
-                                            </a>
-                                        )}
-                                    </div>
-                                    {job.description && (
-                                        <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm text-md-subtitle dark:text-gray-300">
-                                            {job.description}
+                        {visibleJobs.map((job) => (
+                            <div
+                                key={job.id}
+                                className="rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-[#2d4068] dark:bg-[#132244] dark:hover:bg-[#172849]"
+                            >
+                                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                    <div className="min-w-0">
+                                        <p className="truncate text-base font-semibold text-md-on-surface dark:text-white md:text-lg">
+                                            {job.company}
                                         </p>
-                                    )}
-                                    {Array.isArray(job.tech_tags) &&
-                                        job.tech_tags.length > 0 && (
-                                            <SkillGapIndicator
-                                                techTags={job.tech_tags}
-                                                profileSkills={profileSkills}
-                                            />
-                                        )}
-                                    <div className="mt-3 flex justify-end">
-                                        <button
-                                            onClick={() =>
-                                                handleAddToApplications(job)
-                                            }
-                                            className="btn-ripple min-h-[44px] rounded-2xl bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
-                                            disabled={addingForJobId === job.id}
-                                        >
-                                            {addingForJobId === job.id
-                                                ? "Adding..."
-                                                : "Save Application"}
-                                        </button>
+                                        <p className="line-clamp-2 text-sm text-md-subtitle dark:text-gray-300 md:text-base">
+                                            {job.title}
+                                        </p>
+                                        <p className="mt-1 text-xs font-medium text-primary dark:text-blue-300 md:text-sm">
+                                            Match: {getJobMatchScore(job)}%
+                                        </p>
+                                        <p className="text-xs text-md-subtitle dark:text-gray-400 md:text-sm">
+                                            Created:{" "}
+                                            {new Date(
+                                                job.created_at,
+                                            ).toLocaleString()}
+                                        </p>
                                     </div>
+                                    {job.url && (
+                                        <a
+                                            href={job.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="btn-ripple inline-flex min-h-[44px] items-center rounded-2xl px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary-light dark:text-blue-400 dark:hover:bg-blue-900/30"
+                                        >
+                                            View Job
+                                        </a>
+                                    )}
                                 </div>
-                            ))}
-                        {jobs.filter((job) => !savedJobIds.has(job.id))
-                            .length === 0 && (
+                                {job.description && (
+                                    <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm text-md-subtitle dark:text-gray-300">
+                                        {job.description}
+                                    </p>
+                                )}
+                                {Array.isArray(job.tech_tags) &&
+                                    job.tech_tags.length > 0 && (
+                                        <SkillGapIndicator
+                                            techTags={job.tech_tags}
+                                            profileSkills={profileSkills}
+                                        />
+                                    )}
+                                <div className="mt-3 flex justify-end">
+                                    <button
+                                        onClick={() =>
+                                            handleAddToApplications(job)
+                                        }
+                                        className="btn-ripple min-h-[44px] rounded-2xl bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                                        disabled={addingForJobId === job.id}
+                                    >
+                                        {addingForJobId === job.id
+                                            ? "Adding..."
+                                            : "Save Application"}
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {visibleJobs.length === 0 && (
                             <p className="text-md-subtitle dark:text-gray-400">
                                 You have already saved all available job
                                 postings.
