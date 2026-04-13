@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 
@@ -16,6 +17,7 @@ export default function Sidebar() {
 
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [userName, setUserName] = useState<string | null>(null);
+    const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
     const [authLoading, setAuthLoading] = useState(false);
     const isLoggedIn = Boolean(userEmail);
 
@@ -34,7 +36,22 @@ export default function Sidebar() {
             const metadataName =
                 (user?.user_metadata as { full_name?: string } | null)
                     ?.full_name ?? null;
+            const metadataAvatar =
+                (
+                    user?.user_metadata as {
+                        avatar_url?: string;
+                        picture?: string;
+                    } | null
+                )?.avatar_url ??
+                (
+                    user?.user_metadata as {
+                        avatar_url?: string;
+                        picture?: string;
+                    } | null
+                )?.picture ??
+                null;
             setUserName(metadataName || user?.email || null);
+            setUserAvatarUrl(metadataAvatar);
         }
 
         loadUser();
@@ -51,7 +68,22 @@ export default function Sidebar() {
             const metadataName =
                 (session?.user?.user_metadata as { full_name?: string } | null)
                     ?.full_name ?? null;
+            const metadataAvatar =
+                (
+                    session?.user?.user_metadata as {
+                        avatar_url?: string;
+                        picture?: string;
+                    } | null
+                )?.avatar_url ??
+                (
+                    session?.user?.user_metadata as {
+                        avatar_url?: string;
+                        picture?: string;
+                    } | null
+                )?.picture ??
+                null;
             setUserName(metadataName || session?.user?.email || null);
+            setUserAvatarUrl(metadataAvatar);
         });
 
         return () => {
@@ -69,6 +101,7 @@ export default function Sidebar() {
             await supabase.auth.signOut();
             setUserEmail(null);
             setUserName(null);
+            setUserAvatarUrl(null);
             router.replace("/login");
         } finally {
             setAuthLoading(false);
@@ -85,6 +118,7 @@ export default function Sidebar() {
             await supabase.auth.signOut();
             setUserEmail(null);
             setUserName(null);
+            setUserAvatarUrl(null);
             router.push("/login");
         } finally {
             setAuthLoading(false);
@@ -141,36 +175,48 @@ export default function Sidebar() {
 
                 <div className="mt-auto border-t border-gray-100 p-4 dark:border-[#22335a]">
                     <div className="rounded-2xl bg-md-surface px-4 py-3 dark:bg-[#122143]">
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
                             <div className="min-w-0">
-                                <p className="truncate text-sm font-medium text-md-on-surface dark:text-white">
-                                    {userName || "Account"}
-                                </p>
-                                <p className="truncate text-xs text-md-subtitle dark:text-gray-400">
-                                    {userEmail || "Not signed in"}
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-md-subtitle dark:text-gray-400">
-                                    v0.1.0
-                                </span>
-                                {mounted && (
-                                    <button
-                                        onClick={() =>
-                                            setTheme(
-                                                resolvedTheme === "dark"
-                                                    ? "light"
-                                                    : "dark",
-                                            )
-                                        }
-                                        aria-label="Toggle dark mode"
-                                        className="btn-ripple min-h-[44px] min-w-[44px] rounded-xl p-2 text-md-subtitle transition-colors hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-[#1a2c52]"
-                                    >
-                                        {resolvedTheme === "dark" ? "☀️" : "🌙"}
-                                    </button>
-                                )}
+                                <div className="flex items-center gap-3">
+                                    {userAvatarUrl ? (
+                                        <Image
+                                            src={userAvatarUrl}
+                                            alt="Profile photo"
+                                            width={36}
+                                            height={36}
+                                            className="h-9 w-9 rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-light text-xs font-semibold text-primary dark:bg-[#1a2c52] dark:text-blue-200">
+                                            {(userName || "A")
+                                                .trim()
+                                                .charAt(0)
+                                                .toUpperCase()}
+                                        </div>
+                                    )}
+                                    <p className="truncate text-sm font-medium text-md-on-surface dark:text-white">
+                                        {userName || "Account"}
+                                    </p>
+                                </div>
                             </div>
                         </div>
+                        {mounted && (
+                            <div className="mt-2">
+                                <button
+                                    onClick={() =>
+                                        setTheme(
+                                            resolvedTheme === "dark"
+                                                ? "light"
+                                                : "dark",
+                                        )
+                                    }
+                                    aria-label="Toggle dark mode"
+                                    className="btn-ripple min-h-[44px] min-w-[44px] rounded-xl p-2 text-md-subtitle transition-colors hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-[#1a2c52]"
+                                >
+                                    {resolvedTheme === "dark" ? "☀️" : "🌙"}
+                                </button>
+                            </div>
+                        )}
                         {isLoggedIn && (
                             <div className="mt-3 grid grid-cols-2 gap-2">
                                 <button

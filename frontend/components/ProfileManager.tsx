@@ -12,6 +12,7 @@ type Profile = {
     experience_level: string | null;
     remote_preference: boolean | null;
     about: string | null;
+    profile_photo_url: string | null;
     created_at: string;
 };
 
@@ -24,6 +25,7 @@ type EditableFields = {
     experience_level: string;
     remote_preference: boolean;
     about: string;
+    profile_photo_url: string;
 };
 
 async function parseApiResponse(res: Response) {
@@ -85,6 +87,7 @@ export default function ProfileManager() {
                 experience_level: data.experience_level ?? "",
                 remote_preference: Boolean(data.remote_preference),
                 about: data.about ?? "",
+                profile_photo_url: data.profile_photo_url ?? "",
             });
         } catch (err) {
             setError(
@@ -181,6 +184,7 @@ export default function ProfileManager() {
                     experience_level: update.experience_level,
                     remote_preference: update.remote_preference,
                     about: update.about,
+                    profile_photo_url: update.profile_photo_url,
                 }),
             });
             const json = (await parseApiResponse(res)) as {

@@ -111,6 +111,7 @@ export async function PUT(req: NextRequest) {
             experience_level?: string;
             remote_preference?: boolean;
             about?: string;
+            profile_photo_url?: string;
         };
 
         if (!body || Object.keys(body).length === 0) {
@@ -143,6 +144,9 @@ export async function PUT(req: NextRequest) {
                 ? { remote_preference: body.remote_preference }
                 : {}),
             ...(typeof body.about === "string" ? { about: body.about } : {}),
+            ...(typeof body.profile_photo_url === "string"
+                ? { profile_photo_url: body.profile_photo_url }
+                : {}),
         };
 
         const { data, error } = await supabase
