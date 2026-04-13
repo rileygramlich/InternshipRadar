@@ -99,28 +99,28 @@ export default function Sidebar() {
 
     return (
         <>
-            <aside className="hidden md:flex md:fixed md:left-0 md:top-0 md:h-screen md:w-64 md:flex-col md:border-r md:border-gray-200 md:bg-white md:shadow-sm dark:md:border-gray-700 dark:md:bg-gray-900">
+            <aside className="hidden md:flex md:fixed md:left-0 md:top-0 md:h-screen md:w-64 md:flex-col md:bg-white md:shadow-md3-1 dark:md:bg-gray-900">
                 <div className="p-6 lg:p-8">
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-white lg:text-2xl">
+                    <h1 className="text-xl font-bold text-md-on-surface dark:text-white lg:text-2xl">
                         Radar
                     </h1>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <p className="mt-1 text-sm text-md-subtitle dark:text-gray-400">
                         InternshipRadar
                     </p>
                 </div>
 
                 <nav className="mt-2">
-                    <ul className="space-y-2 px-4">
+                    <ul className="space-y-1 px-3">
                         {navItems.map((item) => {
                             const isActive = pathname === item.href;
                             return (
                                 <li key={item.href}>
                                     <Link
                                         href={item.href}
-                                        className={`flex min-h-[44px] items-center gap-3 rounded-lg px-4 py-3 text-sm transition-colors lg:text-base ${
+                                        className={`flex min-h-[44px] items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-all duration-150 lg:text-base ${
                                             isActive
-                                                ? "bg-blue-50 font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-                                                : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+                                                ? "bg-primary-light font-medium text-primary dark:bg-blue-900/30 dark:text-blue-400"
+                                                : "text-md-on-surface hover:bg-md-surface dark:text-gray-300 dark:hover:bg-gray-800"
                                         }`}
                                     >
                                         <span
@@ -139,19 +139,19 @@ export default function Sidebar() {
                     </ul>
                 </nav>
 
-                <div className="mt-auto border-t border-gray-200 p-4 dark:border-gray-700">
-                    <div className="rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-800">
+                <div className="mt-auto border-t border-gray-100 p-4 dark:border-gray-700">
+                    <div className="rounded-2xl bg-md-surface px-4 py-3 dark:bg-gray-800">
                         <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                                <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                                <p className="truncate text-sm font-medium text-md-on-surface dark:text-white">
                                     {userName || "Account"}
                                 </p>
-                                <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+                                <p className="truncate text-xs text-md-subtitle dark:text-gray-400">
                                     {userEmail || "Not signed in"}
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                <span className="text-xs text-md-subtitle dark:text-gray-400">
                                     v0.1.0
                                 </span>
                                 {mounted && (
@@ -164,7 +164,7 @@ export default function Sidebar() {
                                             )
                                         }
                                         aria-label="Toggle dark mode"
-                                        className="min-h-[44px] min-w-[44px] rounded p-2 text-gray-500 transition-colors hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+                                        className="btn-ripple min-h-[44px] min-w-[44px] rounded-xl p-2 text-md-subtitle transition-colors hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
                                     >
                                         {resolvedTheme === "dark" ? "☀️" : "🌙"}
                                     </button>
@@ -175,14 +175,14 @@ export default function Sidebar() {
                             <div className="mt-3 grid grid-cols-2 gap-2">
                                 <button
                                     onClick={handleSwitchUser}
-                                    className="min-h-[44px] w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                    className="btn-ripple min-h-[44px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-md-on-surface hover:bg-md-surface disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                                     disabled={authLoading}
                                 >
                                     Switch user
                                 </button>
                                 <button
                                     onClick={handleLogout}
-                                    className="min-h-[44px] w-full rounded bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-60"
+                                    className="btn-ripple min-h-[44px] w-full rounded-xl bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-60"
                                     disabled={authLoading}
                                 >
                                     Log out
@@ -193,17 +193,17 @@ export default function Sidebar() {
                 </div>
             </aside>
 
-            <nav className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around border-t border-gray-200 bg-white px-2 py-2 dark:border-gray-700 dark:bg-gray-900 md:hidden">
+            <nav className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around border-t border-gray-100 bg-white px-2 py-2 dark:border-gray-700 dark:bg-gray-900 md:hidden">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 rounded-md px-3 py-2 text-xs transition-colors ${
+                            className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 text-xs transition-colors ${
                                 isActive
-                                    ? "text-blue-600 dark:text-blue-400"
-                                    : "text-gray-600 dark:text-gray-300"
+                                    ? "text-primary dark:text-blue-400"
+                                    : "text-md-subtitle dark:text-gray-300"
                             }`}
                         >
                             <span className="text-base" aria-hidden="true">
@@ -221,7 +221,7 @@ export default function Sidebar() {
                             )
                         }
                         aria-label="Toggle dark mode"
-                        className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center rounded-md px-3 py-2 text-xs text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                        className="btn-ripple flex min-h-[44px] min-w-[44px] flex-col items-center justify-center rounded-2xl px-3 py-2 text-xs text-md-subtitle transition-colors hover:bg-md-surface dark:text-gray-300 dark:hover:bg-gray-800"
                     >
                         <span className="text-base" aria-hidden="true">
                             {resolvedTheme === "dark" ? "☀️" : "🌙"}

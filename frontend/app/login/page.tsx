@@ -223,20 +223,20 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
-            <div className="w-full max-w-md rounded-xl bg-white dark:bg-gray-900 p-8 shadow-sm border border-gray-200 dark:border-gray-700">
-                <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="min-h-screen flex items-center justify-center bg-md-surface dark:bg-gray-950 px-4">
+            <div className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-900 p-8 shadow-md3-2">
+                <h1 className="text-2xl font-semibold text-md-on-surface dark:text-white mb-4">
                     {mode === "signin"
                         ? "Sign in to Internship Radar"
                         : "Create your Internship Radar account"}
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                <p className="text-sm text-md-subtitle dark:text-gray-400 mb-6">
                     {mode === "signin"
                         ? "Use your email and password."
                         : "Sign up with your name, email, and password."}
                 </p>
 
-                <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
+                <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-md-surface dark:bg-gray-800 p-1">
                     <button
                         type="button"
                         onClick={() => {
@@ -245,10 +245,10 @@ export default function LoginPage() {
                             setMessage(null);
                         }}
                         className={[
-                            "rounded-md px-3 py-2 text-sm font-medium",
+                            "btn-ripple rounded-xl px-3 py-2 text-sm font-medium transition-colors",
                             mode === "signin"
-                                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
-                                : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200",
+                                ? "bg-white dark:bg-gray-700 text-md-on-surface dark:text-white shadow-sm"
+                                : "text-md-subtitle dark:text-gray-400 hover:text-md-on-surface dark:hover:text-gray-200",
                         ].join(" ")}
                     >
                         Sign In
@@ -261,10 +261,10 @@ export default function LoginPage() {
                             setMessage(null);
                         }}
                         className={[
-                            "rounded-md px-3 py-2 text-sm font-medium",
+                            "btn-ripple rounded-xl px-3 py-2 text-sm font-medium transition-colors",
                             mode === "signup"
-                                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
-                                : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200",
+                                ? "bg-white dark:bg-gray-700 text-md-on-surface dark:text-white shadow-sm"
+                                : "text-md-subtitle dark:text-gray-400 hover:text-md-on-surface dark:hover:text-gray-200",
                         ].join(" ")}
                     >
                         Sign Up
@@ -280,7 +280,7 @@ export default function LoginPage() {
                         type="button"
                         onClick={handleGoogleAuth}
                         disabled={oauthSubmitting || submitting}
-                        className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-60"
+                        className="btn-ripple w-full rounded-2xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-md-on-surface dark:text-gray-300 hover:bg-md-surface dark:hover:bg-gray-700 disabled:opacity-60 transition-colors"
                     >
                         {oauthSubmitting
                             ? "Redirecting to Google..."
@@ -289,7 +289,7 @@ export default function LoginPage() {
 
                     <div className="flex items-center gap-3">
                         <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
-                        <span className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                        <span className="text-xs uppercase tracking-wide text-md-subtitle dark:text-gray-500">
                             or
                         </span>
                         <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
@@ -297,11 +297,11 @@ export default function LoginPage() {
 
                     {mode === "signup" && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label className="block text-sm font-medium text-md-on-surface dark:text-gray-300">
                                 Name
                             </label>
                             <input
-                                className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm"
+                                className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-md-on-surface dark:text-white placeholder-md-subtitle dark:placeholder-gray-400 px-3 py-2 shadow-sm"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Ada Lovelace"
@@ -312,11 +312,11 @@ export default function LoginPage() {
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <label className="block text-sm font-medium text-md-on-surface dark:text-gray-300">
                             Email
                         </label>
                         <input
-                            className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm"
+                            className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-md-on-surface dark:text-white placeholder-md-subtitle dark:placeholder-gray-400 px-3 py-2 shadow-sm"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -327,11 +327,11 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <label className="block text-sm font-medium text-md-on-surface dark:text-gray-300">
                             Password
                         </label>
                         <input
-                            className="mt-1 w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm"
+                            className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-md-on-surface dark:text-white placeholder-md-subtitle dark:placeholder-gray-400 px-3 py-2 shadow-sm"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -360,7 +360,7 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="w-full rounded bg-indigo-600 dark:bg-indigo-500 px-4 py-2 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-60"
+                        className="btn-ripple w-full rounded-2xl bg-primary dark:bg-primary px-4 py-3 text-white font-medium hover:bg-primary-dark dark:hover:bg-primary-dark disabled:opacity-60 transition-colors"
                     >
                         {submitting
                             ? mode === "signin"
