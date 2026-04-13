@@ -19,6 +19,10 @@ type JobPosting = {
     url: string | null;
     description: string | null;
     tech_tags: string[] | null;
+    location: string | null;
+    term: string | null;
+    is_open: boolean | null;
+    match_percentage: number | null;
     created_at: string;
 };
 
@@ -26,6 +30,24 @@ type PendingApplicationSave = {
     jobId: string;
     status: ApplicationStatus;
 };
+
+function calculateSkillMatchScore(
+    techTags: string[] | null | undefined,
+    profileSkills: string[],
+) {
+    if (!Array.isArray(techTags) || techTags.length === 0) {
+        return null;
+    }
+
+    const normalizedProfileSkills = new Set(
+        profileSkills.map((skill) => skill.trim().toLowerCase()),
+    );
+    const matchedCount = techTags.filter((tag) =>
+        normalizedProfileSkills.has(tag.trim().toLowerCase()),
+    ).length;
+
+    return (matchedCount / techTags.length) * 100;
+}
 
 const pendingApplicationSaveKey = "internshipRadar.pendingApplicationSave";
 
@@ -77,6 +99,44 @@ function clearPendingApplicationSave() {
     window.sessionStorage.removeItem(pendingApplicationSaveKey);
 }
 
+function MatchScoreBadge({ score }: { score: number | null | undefined }) {
+    if (score === null || score === undefined) return null;
+
+    let colorClasses: string;
+    if (score >= 80) {
+        colorClasses =
+            "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+    } else if (score >= 50) {
+        colorClasses =
+            "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
+    } else {
+        colorClasses =
+            "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400";
+    }
+
+    return (
+        <div className="flex flex-col items-center gap-0.5">
+            <span
+                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${colorClasses}`}
+            >
+                {Math.round(score)}% match
+            </span>
+            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                <div
+                    className={`h-full rounded-full transition-all ${
+                        score >= 80
+                            ? "bg-green-500"
+                            : score >= 50
+                              ? "bg-yellow-500"
+                              : "bg-gray-400"
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
+                />
+            </div>
+        </div>
+    );
+}
+
 export default function JobManager() {
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
@@ -96,6 +156,12 @@ export default function JobManager() {
     const [pendingSave, setPendingSave] =
         useState<PendingApplicationSave | null>(null);
     const autoSaveAttemptedRef = useRef(false);
+
+    // Filtering & sorting state
+    const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+    const [selectedTerms, setSelectedTerms] = useState<string[]>([]);
+    const [showOpenOnly, setShowOpenOnly] = useState(false);
+    const [sortBy, setSortBy] = useState<"newest" | "match_score">("newest");
 
     useEffect(() => {
         refresh();
@@ -274,6 +340,87 @@ export default function JobManager() {
         await saveApplication(job, quickApplyStatus);
     }
 
+    // Derive unique locations from loaded jobs
+    const availableLocations = useMemo(() => {
+        const locs = jobs
+            .map((j) => j.location)
+            .filter((l): l is string => Boolean(l));
+        return Array.from(new Set(locs)).sort();
+    }, [jobs]);
+
+    const ALL_TERMS = ["Summer", "Fall", "Winter"];
+
+    function toggleLocation(loc: string) {
+        setSelectedLocations((prev) =>
+            prev.includes(loc) ? prev.filter((l) => l !== loc) : [...prev, loc],
+        );
+    }
+
+    function toggleTerm(term: string) {
+        setSelectedTerms((prev) =>
+            prev.includes(term)
+                ? prev.filter((t) => t !== term)
+                : [...prev, term],
+        );
+    }
+
+    const unsavedJobCount = useMemo(
+        () => jobs.filter((job) => !savedJobIds.has(job.id)).length,
+        [jobs, savedJobIds],
+    );
+
+    const visibleJobs = useMemo(() => {
+        let list = jobs
+            .filter((job) => !savedJobIds.has(job.id))
+            .map((job) => ({
+                ...job,
+                computed_match_percentage: calculateSkillMatchScore(
+                    job.tech_tags,
+                    profileSkills,
+                ),
+            }));
+
+        if (selectedLocations.length > 0) {
+            list = list.filter(
+                (job) =>
+                    job.location && selectedLocations.includes(job.location),
+            );
+        }
+
+        if (selectedTerms.length > 0) {
+            list = list.filter(
+                (job) => job.term && selectedTerms.includes(job.term),
+            );
+        }
+
+        if (showOpenOnly) {
+            list = list.filter((job) => job.is_open !== false);
+        }
+
+        if (sortBy === "match_score") {
+            list = [...list].sort(
+                (a, b) =>
+                    (b.computed_match_percentage ?? 0) -
+                    (a.computed_match_percentage ?? 0),
+            );
+        } else {
+            list = [...list].sort(
+                (a, b) =>
+                    new Date(b.created_at).getTime() -
+                    new Date(a.created_at).getTime(),
+            );
+        }
+
+        return list;
+    }, [
+        jobs,
+        savedJobIds,
+        selectedLocations,
+        selectedTerms,
+        showOpenOnly,
+        sortBy,
+    ]);
+
     return (
         <div className="space-y-4 md:space-y-6">
             <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900 md:p-6">
@@ -307,6 +454,108 @@ export default function JobManager() {
                     </p>
                 )}
 
+                {/* Filter & Sort Controls */}
+                <div className="mb-4 flex flex-col gap-4 rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+                    <div className="flex flex-wrap items-center gap-4">
+                        {/* Sort By */}
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                Sort by:
+                            </label>
+                            <select
+                                className="min-h-[36px] rounded border-gray-300 px-2 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                                value={sortBy}
+                                onChange={(e) =>
+                                    setSortBy(
+                                        e.target.value as
+                                            | "newest"
+                                            | "match_score",
+                                    )
+                                }
+                            >
+                                <option value="newest">Newest Postings</option>
+                                <option value="match_score">
+                                    Highest Match Score
+                                </option>
+                            </select>
+                        </div>
+
+                        {/* Open/Closed Toggle */}
+                        <label className="flex cursor-pointer items-center gap-2">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Open only
+                            </span>
+                            <div className="relative">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only"
+                                    checked={showOpenOnly}
+                                    onChange={(e) =>
+                                        setShowOpenOnly(e.target.checked)
+                                    }
+                                />
+                                <div
+                                    className={`h-5 w-9 rounded-full transition-colors ${showOpenOnly ? "bg-indigo-600" : "bg-gray-300 dark:bg-gray-600"}`}
+                                >
+                                    <div
+                                        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${showOpenOnly ? "translate-x-4" : "translate-x-0.5"}`}
+                                    />
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    {/* Term checkboxes */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Term:
+                        </span>
+                        {ALL_TERMS.map((term) => (
+                            <label
+                                key={term}
+                                className="flex cursor-pointer items-center gap-1.5"
+                            >
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    checked={selectedTerms.includes(term)}
+                                    onChange={() => toggleTerm(term)}
+                                />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">
+                                    {term}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+
+                    {/* Location multi-select */}
+                    {availableLocations.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-3">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Location:
+                            </span>
+                            {availableLocations.map((loc) => (
+                                <label
+                                    key={loc}
+                                    className="flex cursor-pointer items-center gap-1.5"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        checked={selectedLocations.includes(
+                                            loc,
+                                        )}
+                                        onChange={() => toggleLocation(loc)}
+                                    />
+                                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                                        {loc}
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Default Application Status
@@ -334,28 +583,54 @@ export default function JobManager() {
                     </p>
                 ) : (
                     <div className="space-y-4">
-                        {jobs
-                            .filter((job) => !savedJobIds.has(job.id))
-                            .map((job) => (
-                                <div
-                                    key={job.id}
-                                    className="rounded-md border border-gray-200 p-4 dark:border-gray-700"
-                                >
-                                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                        <div className="min-w-0">
+                        {visibleJobs.map((job) => (
+                            <div
+                                key={job.id}
+                                className="rounded-md border border-gray-200 p-4 dark:border-gray-700"
+                            >
+                                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                    <div className="min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
                                             <p className="truncate text-base font-semibold text-gray-900 dark:text-white md:text-lg">
                                                 {job.company}
                                             </p>
-                                            <p className="line-clamp-2 text-sm text-gray-700 dark:text-gray-300 md:text-base">
-                                                {job.title}
-                                            </p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 md:text-sm">
-                                                Created:{" "}
-                                                {new Date(
-                                                    job.created_at,
-                                                ).toLocaleString()}
-                                            </p>
+                                            {job.is_open === false && (
+                                                <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                                    Closed
+                                                </span>
+                                            )}
+                                            {job.is_open === true && (
+                                                <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                    Open
+                                                </span>
+                                            )}
+                                            {job.term && (
+                                                <span className="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                                                    {job.term}
+                                                </span>
+                                            )}
                                         </div>
+                                        <p className="line-clamp-2 text-sm text-gray-700 dark:text-gray-300 md:text-base">
+                                            {job.title}
+                                        </p>
+                                        {job.location && (
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                📍 {job.location}
+                                            </p>
+                                        )}
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 md:text-sm">
+                                            Created:{" "}
+                                            {new Date(
+                                                job.created_at,
+                                            ).toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-shrink-0 items-center gap-2">
+                                        <MatchScoreBadge
+                                            score={
+                                                job.computed_match_percentage
+                                            }
+                                        />
                                         {job.url && (
                                             <a
                                                 href={job.url}
@@ -367,38 +642,39 @@ export default function JobManager() {
                                             </a>
                                         )}
                                     </div>
-                                    {job.description && (
-                                        <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
-                                            {job.description}
-                                        </p>
-                                    )}
-                                    {Array.isArray(job.tech_tags) &&
-                                        job.tech_tags.length > 0 && (
-                                            <SkillGapIndicator
-                                                techTags={job.tech_tags}
-                                                profileSkills={profileSkills}
-                                            />
-                                        )}
-                                    <div className="mt-3 flex justify-end">
-                                        <button
-                                            onClick={() =>
-                                                handleAddToApplications(job)
-                                            }
-                                            className="min-h-[44px] rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-                                            disabled={addingForJobId === job.id}
-                                        >
-                                            {addingForJobId === job.id
-                                                ? "Adding..."
-                                                : "Save Application"}
-                                        </button>
-                                    </div>
                                 </div>
-                            ))}
-                        {jobs.filter((job) => !savedJobIds.has(job.id))
-                            .length === 0 && (
+                                {job.description && (
+                                    <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
+                                        {job.description}
+                                    </p>
+                                )}
+                                {Array.isArray(job.tech_tags) &&
+                                    job.tech_tags.length > 0 && (
+                                        <SkillGapIndicator
+                                            techTags={job.tech_tags}
+                                            profileSkills={profileSkills}
+                                        />
+                                    )}
+                                <div className="mt-3 flex justify-end">
+                                    <button
+                                        onClick={() =>
+                                            handleAddToApplications(job)
+                                        }
+                                        className="min-h-[44px] rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                                        disabled={addingForJobId === job.id}
+                                    >
+                                        {addingForJobId === job.id
+                                            ? "Adding..."
+                                            : "Save Application"}
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {visibleJobs.length === 0 && (
                             <p className="text-gray-500 dark:text-gray-400">
-                                You have already saved all available job
-                                postings.
+                                {unsavedJobCount === 0
+                                    ? "You have already saved all available job postings."
+                                    : "No jobs match the current filters."}
                             </p>
                         )}
                     </div>
