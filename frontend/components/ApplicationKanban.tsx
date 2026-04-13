@@ -25,6 +25,8 @@ type Application = {
         url: string | null;
         description: string | null;
         tech_tags: string[] | null;
+        location?: string | null;
+        experience_level?: string | null;
         created_at?: string;
     } | null;
 };
@@ -69,11 +71,186 @@ const COLUMNS: Column[] = [
     },
 ];
 
+function normalizeText(value: string | null | undefined) {
+    return (value ?? "").trim().toLowerCase();
+}
+
+function includesAny(haystack: string, needles: string[]) {
+    return needles.some((needle) => haystack.includes(needle));
+}
+
+function getSkillScore(jobSkills: string[] | null, profileSkills: string[]) {
+    const normalizedJobSkills = (jobSkills ?? [])
+        .map((skill) => normalizeText(skill))
+        .filter(Boolean);
+
+    if (normalizedJobSkills.length === 0) {
+        return 0;
+    }
+
+    const profileSkillSet = new Set(
+        profileSkills.map((skill) => normalizeText(skill)).filter(Boolean),
+    );
+
+    const matchedCount = normalizedJobSkills.filter((skill) =>
+        profileSkillSet.has(skill),
+    ).length;
+
+    return matchedCount / normalizedJobSkills.length;
+}
+
+function getLocationScore(
+    application: Application,
+    profileLocationPreference: string,
+    remoteOnly: boolean,
+) {
+    const job = application.job_postings;
+    if (!job) {
+        return 0;
+    }
+
+    const jobLocationText = normalizeText(
+        [job.location, job.title, job.description].filter(Boolean).join(" "),
+    );
+
+    if (!jobLocationText) {
+        return 0;
+    }
+
+    if (remoteOnly) {
+        return includesAny(jobLocationText, ["remote", "work from home"])
+            ? 1
+            : 0;
+    }
+
+    const preferredLocation = normalizeText(profileLocationPreference);
+    if (!preferredLocation) {
+        return 0;
+    }
+
+    if (preferredLocation.includes("remote")) {
+        return includesAny(jobLocationText, ["remote", "work from home"])
+            ? 1
+            : 0;
+    }
+
+    const locationTokens = preferredLocation
+        .split(/[\s,/|-]+/)
+        .map((token) => token.trim())
+        .filter((token) => token.length >= 3);
+
+    if (jobLocationText.includes(preferredLocation)) {
+        return 1;
+    }
+
+    return locationTokens.length > 0 &&
+        includesAny(jobLocationText, locationTokens)
+        ? 1
+        : 0;
+}
+
+function normalizeExperienceLevel(value: string) {
+    const normalized = normalizeText(value);
+
+    if (includesAny(normalized, ["intern", "internship", "co-op", "coop"])) {
+        return "internship";
+    }
+
+    if (
+        includesAny(normalized, [
+            "entry",
+            "junior",
+            "new grad",
+            "graduate",
+            "associate",
+        ])
+    ) {
+        return "entry";
+    }
+
+    if (includesAny(normalized, ["mid", "intermediate", "ii", "2+"])) {
+        return "mid";
+    }
+
+    if (includesAny(normalized, ["senior", "lead", "staff", "principal"])) {
+        return "senior";
+    }
+
+    return normalized;
+}
+
+function getLevelScore(
+    application: Application,
+    profileExperienceLevel: string,
+) {
+    const preferredLevel = normalizeExperienceLevel(profileExperienceLevel);
+    const job = application.job_postings;
+    if (!preferredLevel || !job) {
+        return 0;
+    }
+
+    const jobLevelText = normalizeText(
+        [job.experience_level, job.title, job.description]
+            .filter(Boolean)
+            .join(" "),
+    );
+
+    if (!jobLevelText) {
+        return 0;
+    }
+
+    if (preferredLevel === "internship") {
+        return includesAny(jobLevelText, [
+            "intern",
+            "internship",
+            "co-op",
+            "coop",
+        ])
+            ? 1
+            : 0;
+    }
+
+    if (preferredLevel === "entry") {
+        return includesAny(jobLevelText, [
+            "entry",
+            "junior",
+            "new grad",
+            "graduate",
+            "associate",
+        ])
+            ? 1
+            : 0;
+    }
+
+    if (preferredLevel === "mid") {
+        return includesAny(jobLevelText, ["mid", "intermediate", "ii", "2+"])
+            ? 1
+            : 0;
+    }
+
+    if (preferredLevel === "senior") {
+        return includesAny(jobLevelText, [
+            "senior",
+            "lead",
+            "staff",
+            "principal",
+        ])
+            ? 1
+            : 0;
+    }
+
+    return jobLevelText.includes(preferredLevel) ? 1 : 0;
+}
+
 export default function ApplicationKanban() {
     const [applications, setApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [profileSkills, setProfileSkills] = useState<string[]>([]);
+    const [profileLocationPreference, setProfileLocationPreference] =
+        useState("");
+    const [profileExperienceLevel, setProfileExperienceLevel] = useState("");
+    const [profileRemoteOnly, setProfileRemoteOnly] = useState(false);
 
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [updatingIds, setUpdatingIds] = useState<Record<string, boolean>>({});
@@ -110,11 +287,30 @@ export default function ApplicationKanban() {
                             ? profileJson.data.skills
                             : [],
                     );
+                    setProfileLocationPreference(
+                        typeof profileJson.data.location_preference === "string"
+                            ? profileJson.data.location_preference
+                            : "",
+                    );
+                    setProfileExperienceLevel(
+                        typeof profileJson.data.experience_level === "string"
+                            ? profileJson.data.experience_level
+                            : "",
+                    );
+                    setProfileRemoteOnly(
+                        Boolean(profileJson.data.remote_preference),
+                    );
                 } else {
                     setProfileSkills([]);
+                    setProfileLocationPreference("");
+                    setProfileExperienceLevel("");
+                    setProfileRemoteOnly(false);
                 }
             } catch {
                 setProfileSkills([]);
+                setProfileLocationPreference("");
+                setProfileExperienceLevel("");
+                setProfileRemoteOnly(false);
             }
         } catch (err) {
             setError(
@@ -126,6 +322,35 @@ export default function ApplicationKanban() {
             setLoading(false);
         }
     }, []);
+
+    const getApplicationMatchScore = useCallback(
+        (application: Application) => {
+            const locationScore = getLocationScore(
+                application,
+                profileLocationPreference,
+                profileRemoteOnly,
+            );
+            const levelScore = getLevelScore(
+                application,
+                profileExperienceLevel,
+            );
+            const skillScore = getSkillScore(
+                application.job_postings?.tech_tags ?? null,
+                profileSkills,
+            );
+
+            return Math.round(
+                (locationScore * 0.5 + levelScore * 0.25 + skillScore * 0.25) *
+                    100,
+            );
+        },
+        [
+            profileExperienceLevel,
+            profileLocationPreference,
+            profileRemoteOnly,
+            profileSkills,
+        ],
+    );
 
     useEffect(() => {
         refresh();
@@ -386,9 +611,6 @@ export default function ApplicationKanban() {
                                                 : "opacity-100",
                                         ].join(" ")}
                                     >
-                                        <p className="truncate text-xs text-md-subtitle dark:text-gray-400">
-                                            {application.id}
-                                        </p>
                                         <p className="mt-1 truncate text-sm font-semibold text-md-on-surface dark:text-white">
                                             {application.job_postings
                                                 ?.company || "Unknown Company"}
@@ -433,14 +655,12 @@ export default function ApplicationKanban() {
                                                 </span>
                                             </a>
                                         )}
-                                        <p className="mt-1 truncate text-xs text-md-subtitle dark:text-gray-400">
-                                            Profile: {application.profile_id}
-                                        </p>
-                                        <p className="truncate text-xs text-md-subtitle dark:text-gray-400">
-                                            Job ID: {application.job_id}
-                                        </p>
                                         <p className="text-xs text-md-subtitle dark:text-gray-400 mt-1">
-                                            Match: {application.match_score}
+                                            Match:{" "}
+                                            {getApplicationMatchScore(
+                                                application,
+                                            )}
+                                            %
                                         </p>
                                         <p className="text-xs text-md-subtitle dark:text-gray-500 mt-1">
                                             {new Date(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { SkillGapIndicator } from "@/components/SkillPill";
@@ -19,6 +19,8 @@ type JobPosting = {
     url: string | null;
     description: string | null;
     tech_tags: string[] | null;
+    location?: string | null;
+    experience_level?: string | null;
     created_at: string;
 };
 
@@ -77,6 +79,158 @@ function clearPendingApplicationSave() {
     window.sessionStorage.removeItem(pendingApplicationSaveKey);
 }
 
+function normalizeText(value: string | null | undefined) {
+    return (value ?? "").trim().toLowerCase();
+}
+
+function includesAny(haystack: string, needles: string[]) {
+    return needles.some((needle) => haystack.includes(needle));
+}
+
+function getSkillScore(jobSkills: string[] | null, profileSkills: string[]) {
+    const normalizedJobSkills = (jobSkills ?? [])
+        .map((skill) => normalizeText(skill))
+        .filter(Boolean);
+
+    if (normalizedJobSkills.length === 0) {
+        return 0;
+    }
+
+    const profileSkillSet = new Set(
+        profileSkills.map((skill) => normalizeText(skill)).filter(Boolean),
+    );
+
+    const matchedCount = normalizedJobSkills.filter((skill) =>
+        profileSkillSet.has(skill),
+    ).length;
+
+    return matchedCount / normalizedJobSkills.length;
+}
+
+function getLocationScore(job: JobPosting, profileLocationPreference: string) {
+    const preferredLocation = normalizeText(profileLocationPreference);
+    if (!preferredLocation) {
+        return 0;
+    }
+
+    const jobLocationText = normalizeText(
+        [job.location, job.title, job.description].filter(Boolean).join(" "),
+    );
+
+    if (!jobLocationText) {
+        return 0;
+    }
+
+    if (preferredLocation.includes("remote")) {
+        return includesAny(jobLocationText, ["remote", "work from home"])
+            ? 1
+            : 0;
+    }
+
+    const locationTokens = preferredLocation
+        .split(/[\s,/|-]+/)
+        .map((token) => token.trim())
+        .filter((token) => token.length >= 3);
+
+    if (jobLocationText.includes(preferredLocation)) {
+        return 1;
+    }
+
+    return locationTokens.length > 0 &&
+        includesAny(jobLocationText, locationTokens)
+        ? 1
+        : 0;
+}
+
+function normalizeExperienceLevel(value: string) {
+    const normalized = normalizeText(value);
+
+    if (includesAny(normalized, ["intern", "internship", "co-op", "coop"])) {
+        return "internship";
+    }
+
+    if (
+        includesAny(normalized, [
+            "entry",
+            "junior",
+            "new grad",
+            "graduate",
+            "associate",
+        ])
+    ) {
+        return "entry";
+    }
+
+    if (includesAny(normalized, ["mid", "intermediate", "ii", "2+"])) {
+        return "mid";
+    }
+
+    if (includesAny(normalized, ["senior", "lead", "staff", "principal"])) {
+        return "senior";
+    }
+
+    return normalized;
+}
+
+function getLevelScore(job: JobPosting, profileExperienceLevel: string) {
+    const preferredLevel = normalizeExperienceLevel(profileExperienceLevel);
+    if (!preferredLevel) {
+        return 0;
+    }
+
+    const jobLevelText = normalizeText(
+        [job.experience_level, job.title, job.description]
+            .filter(Boolean)
+            .join(" "),
+    );
+
+    if (!jobLevelText) {
+        return 0;
+    }
+
+    if (preferredLevel === "internship") {
+        return includesAny(jobLevelText, [
+            "intern",
+            "internship",
+            "co-op",
+            "coop",
+        ])
+            ? 1
+            : 0;
+    }
+
+    if (preferredLevel === "entry") {
+        return includesAny(jobLevelText, [
+            "entry",
+            "junior",
+            "new grad",
+            "graduate",
+            "associate",
+        ])
+            ? 1
+            : 0;
+    }
+
+    if (preferredLevel === "mid") {
+        return includesAny(jobLevelText, ["mid", "intermediate", "ii", "2+"])
+            ? 1
+            : 0;
+    }
+
+    if (preferredLevel === "senior") {
+        return includesAny(jobLevelText, [
+            "senior",
+            "lead",
+            "staff",
+            "principal",
+        ])
+            ? 1
+            : 0;
+    }
+
+    return jobLevelText.includes(preferredLevel) ? 1 : 0;
+}
+
 export default function JobManager() {
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
@@ -93,9 +247,29 @@ export default function JobManager() {
     const [addingForJobId, setAddingForJobId] = useState<string | null>(null);
     const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
     const [profileSkills, setProfileSkills] = useState<string[]>([]);
+    const [profileLocationPreference, setProfileLocationPreference] =
+        useState("");
+    const [profileExperienceLevel, setProfileExperienceLevel] = useState("");
     const [pendingSave, setPendingSave] =
         useState<PendingApplicationSave | null>(null);
     const autoSaveAttemptedRef = useRef(false);
+
+    const getJobMatchScore = useCallback(
+        (job: JobPosting) => {
+            const locationScore = getLocationScore(
+                job,
+                profileLocationPreference,
+            );
+            const levelScore = getLevelScore(job, profileExperienceLevel);
+            const skillScore = getSkillScore(job.tech_tags, profileSkills);
+
+            return Math.round(
+                (locationScore * 0.5 + levelScore * 0.25 + skillScore * 0.25) *
+                    100,
+            );
+        },
+        [profileExperienceLevel, profileLocationPreference, profileSkills],
+    );
 
     useEffect(() => {
         refresh();
@@ -125,7 +299,11 @@ export default function JobManager() {
         autoSaveAttemptedRef.current = true;
 
         void (async () => {
-            const saved = await saveApplication(job, pendingSave.status);
+            const saved = await saveApplication(
+                job,
+                pendingSave.status,
+                getJobMatchScore(job),
+            );
             if (saved) {
                 clearPendingApplicationSave();
                 setPendingSave(null);
@@ -133,7 +311,7 @@ export default function JobManager() {
                 autoSaveAttemptedRef.current = false;
             }
         })();
-    }, [isAuthenticated, jobs, pendingSave, profileId]);
+    }, [getJobMatchScore, isAuthenticated, jobs, pendingSave, profileId]);
 
     async function refresh() {
         setLoading(true);
@@ -163,6 +341,8 @@ export default function JobManager() {
 
             if (!loggedIn) {
                 setProfileId("");
+                setProfileLocationPreference("");
+                setProfileExperienceLevel("");
                 setJobs(jobsArray);
                 setSavedJobIds(new Set());
                 return;
@@ -182,9 +362,21 @@ export default function JobManager() {
                         ? profileJson.data.skills
                         : [],
                 );
+                setProfileLocationPreference(
+                    typeof profileJson.data?.location_preference === "string"
+                        ? profileJson.data.location_preference
+                        : "",
+                );
+                setProfileExperienceLevel(
+                    typeof profileJson.data?.experience_level === "string"
+                        ? profileJson.data.experience_level
+                        : "",
+                );
             } else {
                 setProfileId("");
                 setProfileSkills([]);
+                setProfileLocationPreference("");
+                setProfileExperienceLevel("");
             }
 
             // Fetch user's applications to filter out saved jobs
@@ -216,7 +408,11 @@ export default function JobManager() {
         }
     }
 
-    async function saveApplication(job: JobPosting, status: ApplicationStatus) {
+    async function saveApplication(
+        job: JobPosting,
+        status: ApplicationStatus,
+        matchScore: number,
+    ) {
         setError(null);
         setActionMessage(null);
 
@@ -229,7 +425,7 @@ export default function JobManager() {
                     profileId,
                     jobId: job.id,
                     status,
-                    matchScore: 0,
+                    matchScore,
                 }),
             });
 
@@ -271,7 +467,7 @@ export default function JobManager() {
             return;
         }
 
-        await saveApplication(job, quickApplyStatus);
+        await saveApplication(job, quickApplyStatus, getJobMatchScore(job));
     }
 
     return (
@@ -348,6 +544,9 @@ export default function JobManager() {
                                             </p>
                                             <p className="line-clamp-2 text-sm text-md-subtitle dark:text-gray-300 md:text-base">
                                                 {job.title}
+                                            </p>
+                                            <p className="mt-1 text-xs font-medium text-primary dark:text-blue-300 md:text-sm">
+                                                Match: {getJobMatchScore(job)}%
                                             </p>
                                             <p className="text-xs text-md-subtitle dark:text-gray-400 md:text-sm">
                                                 Created:{" "}

@@ -108,6 +108,9 @@ export async function PUT(req: NextRequest) {
             discord_webhook_url?: string;
             skills?: string[];
             location_preference?: string;
+            experience_level?: string;
+            remote_preference?: boolean;
+            about?: string;
         };
 
         if (!body || Object.keys(body).length === 0) {
@@ -133,6 +136,13 @@ export async function PUT(req: NextRequest) {
             ...(typeof body.location_preference === "string"
                 ? { location_preference: body.location_preference }
                 : {}),
+            ...(typeof body.experience_level === "string"
+                ? { experience_level: body.experience_level }
+                : {}),
+            ...(typeof body.remote_preference === "boolean"
+                ? { remote_preference: body.remote_preference }
+                : {}),
+            ...(typeof body.about === "string" ? { about: body.about } : {}),
         };
 
         const { data, error } = await supabase

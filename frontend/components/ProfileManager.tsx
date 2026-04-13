@@ -9,6 +9,9 @@ type Profile = {
     discord_webhook_url: string | null;
     skills: string[];
     location_preference: string | null;
+    experience_level: string | null;
+    remote_preference: boolean | null;
+    about: string | null;
     created_at: string;
 };
 
@@ -19,6 +22,8 @@ type EditableFields = {
     skills: string;
     location_preference: string;
     experience_level: string;
+    remote_preference: boolean;
+    about: string;
 };
 
 async function parseApiResponse(res: Response) {
@@ -77,7 +82,9 @@ export default function ProfileManager() {
                 discord_webhook_url: data.discord_webhook_url ?? "",
                 skills: (data.skills || []).join(", "),
                 location_preference: data.location_preference ?? "",
-                experience_level: "",
+                experience_level: data.experience_level ?? "",
+                remote_preference: Boolean(data.remote_preference),
+                about: data.about ?? "",
             });
         } catch (err) {
             setError(
@@ -109,6 +116,8 @@ export default function ProfileManager() {
                 skills?: string[];
                 location_preference?: string;
                 experience_level?: string;
+                remote_preference?: boolean;
+                about?: string;
             } | null;
             if (!res.ok)
                 throw new Error(json?.error || "Failed to parse resume");
@@ -125,6 +134,14 @@ export default function ProfileManager() {
                               prev.location_preference,
                           experience_level:
                               json?.experience_level || prev.experience_level,
+                          remote_preference:
+                              typeof json?.remote_preference === "boolean"
+                                  ? json.remote_preference
+                                  : prev.remote_preference,
+                          about:
+                              typeof json?.about === "string"
+                                  ? json.about
+                                  : prev.about,
                       }
                     : prev,
             );
@@ -161,6 +178,9 @@ export default function ProfileManager() {
                         .map((s) => s.trim())
                         .filter(Boolean),
                     location_preference: update.location_preference,
+                    experience_level: update.experience_level,
+                    remote_preference: update.remote_preference,
+                    about: update.about,
                 }),
             });
             const json = (await parseApiResponse(res)) as {
@@ -371,6 +391,48 @@ export default function ProfileManager() {
                                         )
                                     }
                                     placeholder="e.g. Internship, Entry Level"
+                                />
+                            </div>
+                            <div className="flex items-end">
+                                <label className="inline-flex items-center gap-2 text-sm font-medium text-md-on-surface dark:text-gray-300">
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        checked={edits.remote_preference}
+                                        onChange={(e) =>
+                                            setEdits((prev) =>
+                                                prev
+                                                    ? {
+                                                          ...prev,
+                                                          remote_preference:
+                                                              e.target.checked,
+                                                      }
+                                                    : prev,
+                                            )
+                                        }
+                                    />
+                                    Remote?
+                                </label>
+                            </div>
+                            <div className="md:col-span-2 lg:col-span-3">
+                                <label className="block text-sm font-medium text-md-on-surface dark:text-gray-300">
+                                    About
+                                </label>
+                                <textarea
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    rows={4}
+                                    value={edits.about}
+                                    onChange={(e) =>
+                                        setEdits((prev) =>
+                                            prev
+                                                ? {
+                                                      ...prev,
+                                                      about: e.target.value,
+                                                  }
+                                                : prev,
+                                        )
+                                    }
+                                    placeholder="Short professional summary"
                                 />
                             </div>
                         </div>

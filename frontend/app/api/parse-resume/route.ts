@@ -45,6 +45,8 @@ function parseModelJson(raw: string) {
         skills?: unknown;
         location_preference?: unknown;
         experience_level?: unknown;
+        remote_preference?: unknown;
+        about?: unknown;
     };
 }
 
@@ -150,6 +152,8 @@ export async function POST(req: NextRequest) {
 - "skills": an array of strings listing the candidate's technical and professional skills
 - "location_preference": a string describing the candidate's preferred work location or "Remote" if not specified
 - "experience_level": a string that is one of "Internship", "Entry Level", "Mid Level", or "Senior Level" based on their experience
+- "remote_preference": boolean, true if the candidate explicitly indicates remote preference or remote-only
+- "about": a concise 1-3 sentence professional summary based on the resume
 
 Resume text:
 ${extractedText.slice(0, 8000)}`,
@@ -174,6 +178,8 @@ ${extractedText.slice(0, 8000)}`,
             skills?: unknown;
             location_preference?: unknown;
             experience_level?: unknown;
+            remote_preference?: unknown;
+            about?: unknown;
         };
         try {
             parsed = parseModelJson(raw);
@@ -199,10 +205,20 @@ ${extractedText.slice(0, 8000)}`,
                 ? parsed.experience_level.trim()
                 : "";
 
+        const remotePreference =
+            typeof parsed.remote_preference === "boolean"
+                ? parsed.remote_preference
+                : /\bremote\b/i.test(locationPreference);
+
+        const about =
+            typeof parsed.about === "string" ? parsed.about.trim() : "";
+
         return NextResponse.json({
             skills,
             location_preference: locationPreference,
             experience_level: experienceLevel,
+            remote_preference: remotePreference,
+            about,
         });
     } catch (error) {
         return serverError(error);

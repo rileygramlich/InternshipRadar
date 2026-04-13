@@ -48,6 +48,9 @@ async function ensureProfileForUser(email: string, fallbackName: string) {
                 discord_webhook_url: "",
                 skills: [],
                 location_preference: "",
+                experience_level: "",
+                remote_preference: false,
+                about: "",
             });
 
         if (insertError) {
