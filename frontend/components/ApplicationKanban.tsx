@@ -294,27 +294,8 @@ export default function ApplicationKanban() {
 
     return (
         <div className="space-y-4 overflow-x-hidden lg:space-y-6">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h2 className="text-xl font-semibold text-md-on-surface dark:text-white md:text-2xl lg:text-3xl">
-                        Applications
-                    </h2>
-                    <p className="mt-1 text-sm text-md-subtitle dark:text-gray-400 md:text-base">
-                        Drag cards between columns to change status. Changes
-                        sync instantly to Supabase.
-                    </p>
-                </div>
-                <button
-                    onClick={refresh}
-                    className="btn-ripple min-h-[44px] self-start rounded-2xl px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary-light dark:text-blue-400 dark:hover:bg-blue-900/30 md:self-auto"
-                    disabled={loading}
-                >
-                    {loading ? "Refreshing..." : "Refresh"}
-                </button>
-            </div>
-
             {/* Analytics summary bar */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-primary-light px-4 py-3 text-sm text-md-on-surface shadow-md3-1 dark:bg-blue-900 dark:text-gray-200">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-primary-light px-4 py-3 text-sm text-md-on-surface dark:bg-blue-900 dark:text-gray-200">
                 {COLUMNS.map((col, index) => (
                     <span key={col.key} className="flex items-center gap-1">
                         {index !== 0 && (
@@ -360,7 +341,7 @@ export default function ApplicationKanban() {
                         key={column.key}
                         onDragOver={(event) => event.preventDefault()}
                         onDrop={onDropToColumn(column.key)}
-                        className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 shadow-md3-1 dark:bg-[#132244] lg:w-auto lg:shrink lg:snap-none"
+                        className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#132244] lg:w-auto lg:shrink lg:snap-none"
                     >
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
