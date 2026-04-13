@@ -33,18 +33,20 @@ type Column = {
     key: ApplicationStatus;
     label: string;
     accentClass: string;
+    dotClass: string;
 };
 
 const COLUMNS: Column[] = [
-    { key: "saved", label: "Saved", accentClass: "border-slate-300" },
-    { key: "applied", label: "Applied", accentClass: "border-blue-300" },
+    { key: "saved", label: "Saved", accentClass: "border-l-slate-400", dotClass: "bg-slate-400" },
+    { key: "applied", label: "Applied", accentClass: "border-l-blue-400", dotClass: "bg-blue-400" },
     {
         key: "interview",
         label: "Interview",
-        accentClass: "border-amber-300",
+        accentClass: "border-l-amber-400",
+        dotClass: "bg-amber-400",
     },
-    { key: "offer", label: "Offer", accentClass: "border-emerald-300" },
-    { key: "rejected", label: "Rejected", accentClass: "border-rose-300" },
+    { key: "offer", label: "Offer", accentClass: "border-l-emerald-400", dotClass: "bg-emerald-400" },
+    { key: "rejected", label: "Rejected", accentClass: "border-l-rose-400", dotClass: "bg-rose-400" },
 ];
 
 export default function ApplicationKanban() {
@@ -338,9 +340,12 @@ export default function ApplicationKanban() {
                         className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 shadow-md3-1 dark:bg-gray-800 lg:w-auto lg:shrink lg:snap-none"
                     >
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-semibold text-md-on-surface dark:text-gray-200">
-                                {column.label}
-                            </h3>
+                            <div className="flex items-center gap-2">
+                                <span className={`h-2.5 w-2.5 rounded-full ${column.dotClass}`} aria-hidden="true" />
+                                <h3 className="text-sm font-semibold text-md-on-surface dark:text-gray-200">
+                                    {column.label}
+                                </h3>
+                            </div>
                             <span className="text-xs px-2 py-0.5 rounded-full bg-white dark:bg-gray-700 text-md-subtitle dark:text-gray-300 shadow-sm">
                                 {column.items.length}
                             </span>
@@ -367,7 +372,8 @@ export default function ApplicationKanban() {
                                         }}
                                         onDragEnd={() => setDraggingId(null)}
                                         className={[
-                                            "cursor-grab rounded-2xl bg-white p-3 shadow-md3-1 transition-shadow hover:shadow-md3-2 active:cursor-grabbing dark:bg-gray-900",
+                                            "cursor-grab rounded-2xl border-l-4 bg-white p-3 shadow-md3-1 transition-shadow hover:shadow-md3-2 active:cursor-grabbing dark:bg-gray-900",
+                                            column.accentClass,
                                             updatingIds[application.id]
                                                 ? "opacity-60"
                                                 : "opacity-100",
