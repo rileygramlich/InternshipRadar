@@ -1,7 +1,6 @@
 module.exports = {
   ci: {
     collect: {
-      // Testing the specific pages Riley requested
       url: [
         'http://localhost:3000/radar', 
         'http://localhost:3000/tracker'
