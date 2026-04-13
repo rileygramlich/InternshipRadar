@@ -159,6 +159,8 @@ export default function ProfileManager() {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        if (!profile || !edits) return;
+
         setResumeParsing(true);
         setResumeError(null);
         try {
@@ -180,29 +182,52 @@ export default function ProfileManager() {
             if (!res.ok)
                 throw new Error(json?.error || "Failed to parse resume");
 
-            setEdits((prev) =>
-                prev
-                    ? {
-                          ...prev,
-                          skills: Array.isArray(json?.skills)
-                              ? json.skills.join(", ")
-                              : prev.skills,
-                          location_preference:
-                              json?.location_preference ||
-                              prev.location_preference,
-                          experience_level:
-                              json?.experience_level || prev.experience_level,
-                          remote_preference:
-                              typeof json?.remote_preference === "boolean"
-                                  ? json.remote_preference
-                                  : prev.remote_preference,
-                          about:
-                              typeof json?.about === "string"
-                                  ? json.about
-                                  : prev.about,
-                      }
-                    : prev,
-            );
+            // Create updated edits with parsed data
+            const updatedEdits: EditableFields = {
+                ...edits,
+                skills: Array.isArray(json?.skills)
+                    ? json.skills.join(", ")
+                    : edits.skills,
+                location_preference:
+                    json?.location_preference || edits.location_preference,
+                experience_level:
+                    json?.experience_level || edits.experience_level,
+                remote_preference:
+                    typeof json?.remote_preference === "boolean"
+                        ? json.remote_preference
+                        : edits.remote_preference,
+                about:
+                    typeof json?.about === "string" ? json.about : edits.about,
+            };
+
+            setEdits(updatedEdits);
+
+            // Auto-save the parsed data
+            const base = profileToEdits(profile);
+            const payload = buildUpdatePayload(updatedEdits, base);
+
+            if (Object.keys(payload).length > 0) {
+                setError(null);
+                const saveRes = await fetch("/api/profiles/me", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+                const saveJson = (await parseApiResponse(saveRes)) as {
+                    error?: string;
+                    data?: Profile;
+                } | null;
+                if (!saveRes.ok)
+                    throw new Error(
+                        saveJson?.error || "Failed to save parsed resume data",
+                    );
+
+                if (saveJson?.data) {
+                    setProfile(saveJson.data);
+                    setEdits(profileToEdits(saveJson.data));
+                }
+                setSuccess("Resume data added and profile updated.");
+            }
         } catch (err) {
             setResumeError(
                 err instanceof Error ? err.message : "Failed to parse resume",
@@ -263,7 +288,7 @@ export default function ProfileManager() {
 
     return (
         <div className="space-y-6">
-            <div className="rounded-2xl bg-white p-6 shadow-md3-1 dark:bg-[#0d1730]">
+            <div className="rounded-2xl bg-white p-6 shadow-md3-1 dark:bg-[#0f1115]">
                 <h2 className="text-xl font-semibold text-md-on-surface dark:text-white mb-3">
                     Import from Resume
                 </h2>
@@ -294,7 +319,7 @@ export default function ProfileManager() {
                     )}
                 </label>
             </div>
-            <div className="rounded-2xl bg-white p-6 shadow-md3-1 dark:bg-[#0d1730]">
+            <div className="rounded-2xl bg-white p-6 shadow-md3-1 dark:bg-[#0f1115]">
                 <h2 className="text-xl font-semibold text-md-on-surface dark:text-white mb-4">
                     Profile Settings
                 </h2>
@@ -314,7 +339,7 @@ export default function ProfileManager() {
                         account profile.
                     </p>
                 ) : (
-                    <div className="p-4 rounded-2xl bg-md-surface dark:bg-[#132244]">
+                    <div className="p-4 rounded-2xl bg-md-surface dark:bg-[#171a20]">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-md-subtitle dark:text-gray-400">
@@ -338,7 +363,7 @@ export default function ProfileManager() {
                                     Name
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] dark:bg-[#171a20] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
                                     value={edits.name}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -357,7 +382,7 @@ export default function ProfileManager() {
                                     Email
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] bg-gray-100 dark:bg-[#1a2c52] shadow-sm text-sm px-3 py-2 text-md-subtitle dark:text-gray-300"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] bg-gray-100 dark:bg-[#1e232c] shadow-sm text-sm px-3 py-2 text-md-subtitle dark:text-gray-300"
                                     type="email"
                                     value={edits.email}
                                     readOnly
@@ -371,7 +396,7 @@ export default function ProfileManager() {
                                     Webhook URL
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] dark:bg-[#171a20] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
                                     value={edits.discord_webhook_url}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -391,7 +416,7 @@ export default function ProfileManager() {
                                     Skills
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] dark:bg-[#171a20] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
                                     value={edits.skills}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -410,7 +435,7 @@ export default function ProfileManager() {
                                     Location
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] dark:bg-[#171a20] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
                                     value={edits.location_preference}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -430,7 +455,7 @@ export default function ProfileManager() {
                                     Experience Level
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] dark:bg-[#171a20] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
                                     value={edits.experience_level}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -472,7 +497,7 @@ export default function ProfileManager() {
                                     About
                                 </label>
                                 <textarea
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] dark:bg-[#171a20] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
                                     rows={4}
                                     value={edits.about}
                                     onChange={(e) =>

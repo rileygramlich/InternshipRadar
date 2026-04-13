@@ -579,7 +579,7 @@ export default function ApplicationKanban() {
                     ? COLUMNS.map((column) => (
                           <div
                               key={`loading-${column.key}`}
-                              className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#132244] lg:w-auto lg:shrink lg:snap-none"
+                              className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#1b2430] lg:w-auto lg:shrink lg:snap-none"
                           >
                               <div className="mb-3 flex items-center justify-between">
                                   <div className="loading-shimmer h-4 w-20 rounded-lg" />
@@ -589,7 +589,7 @@ export default function ApplicationKanban() {
                                   {Array.from({ length: 2 }).map((_, idx) => (
                                       <div
                                           key={`${column.key}-loading-card-${idx}`}
-                                          className="rounded-2xl border border-gray-200 bg-white p-3 dark:border-[#2d4068] dark:bg-[#0d1730]"
+                                          className="rounded-2xl border border-gray-200 bg-white p-3 dark:border-[#344051] dark:bg-[#11161d]"
                                       >
                                           <div className="space-y-2">
                                               <div className="loading-shimmer h-4 w-32 rounded-lg" />
@@ -608,7 +608,7 @@ export default function ApplicationKanban() {
                               key={column.key}
                               onDragOver={(event) => event.preventDefault()}
                               onDrop={onDropToColumn(column.key)}
-                              className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#132244] lg:w-auto lg:shrink lg:snap-none"
+                              className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#1b2430] lg:w-auto lg:shrink lg:snap-none"
                           >
                               <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center gap-2">
@@ -648,7 +648,7 @@ export default function ApplicationKanban() {
                                                   setDraggingId(null)
                                               }
                                               className={[
-                                                  "cursor-grab rounded-2xl border bg-white p-3 shadow-md3-1 transition-shadow hover:shadow-md3-2 active:cursor-grabbing dark:bg-[#0d1730]",
+                                                  "cursor-grab rounded-2xl border bg-white p-3 shadow-md3-1 transition-shadow hover:shadow-md3-2 active:cursor-grabbing dark:bg-[#11161d]",
                                                   column.accentClass,
                                                   updatingIds[application.id]
                                                       ? "opacity-60"
@@ -721,7 +721,7 @@ export default function ApplicationKanban() {
 
                                               <div className="mt-2">
                                                   <select
-                                                      className="min-h-[44px] w-full rounded-2xl border border-gray-200 px-2 text-xs dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100"
+                                                      className="min-h-[44px] w-full rounded-2xl border border-gray-200 px-2 text-xs dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100"
                                                       value={application.status}
                                                       onChange={(event) => {
                                                           if (
@@ -784,8 +784,8 @@ export default function ApplicationKanban() {
             {/* Confirmation Dialog */}
             {confirmDialog && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-                    <div className="mx-4 w-full max-w-sm rounded-2xl bg-white shadow-md3-2 dark:bg-[#0d1730]">
-                        <div className="border-b border-gray-100 dark:border-[#22335a] px-6 py-4">
+                    <div className="mx-4 w-full max-w-sm rounded-2xl bg-white shadow-md3-2 dark:bg-[#11161d]">
+                        <div className="border-b border-gray-100 dark:border-[#313c4d] px-6 py-4">
                             <h3 className="text-lg font-semibold text-md-on-surface dark:text-white">
                                 Remove Job Posting
                             </h3>
@@ -806,7 +806,7 @@ export default function ApplicationKanban() {
                                 This action cannot be undone.
                             </p>
                         </div>
-                        <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4 dark:border-[#22335a]">
+                        <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4 dark:border-[#313c4d]">
                             <button
                                 onClick={confirmDelete}
                                 disabled={
@@ -820,7 +820,7 @@ export default function ApplicationKanban() {
                             </button>
                             <button
                                 onClick={() => setConfirmDialog(null)}
-                                className="btn-ripple min-h-[44px] rounded-2xl border border-gray-200 px-4 py-2 text-sm font-medium text-md-on-surface hover:bg-md-surface dark:border-[#2d4068] dark:text-gray-100 dark:hover:bg-[#132244]"
+                                className="btn-ripple min-h-[44px] rounded-2xl border border-gray-200 px-4 py-2 text-sm font-medium text-md-on-surface hover:bg-md-surface dark:border-[#344051] dark:text-gray-100 dark:hover:bg-[#1b2430]"
                             >
                                 Cancel
                             </button>

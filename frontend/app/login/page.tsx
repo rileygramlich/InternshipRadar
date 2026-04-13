@@ -224,7 +224,7 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-md-surface dark:bg-gray-950 px-4">
-            <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#0d1730] p-8 shadow-md3-2">
+            <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#11161d] p-8 shadow-md3-2">
                 <h1 className="text-2xl font-semibold text-md-on-surface dark:text-white mb-4">
                     {mode === "signin"
                         ? "Sign in to Internship Radar"
@@ -236,7 +236,7 @@ export default function LoginPage() {
                         : "Sign up with your name, email, and password."}
                 </p>
 
-                <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-md-surface dark:bg-[#132244] p-1">
+                <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-md-surface dark:bg-[#1b2430] p-1">
                     <button
                         type="button"
                         onClick={() => {
@@ -280,7 +280,7 @@ export default function LoginPage() {
                         type="button"
                         onClick={handleGoogleAuth}
                         disabled={oauthSubmitting || submitting}
-                        className="btn-ripple w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] bg-white dark:bg-[#132244] px-4 py-3 text-md-on-surface dark:text-gray-100 hover:bg-md-surface dark:hover:bg-[#1a2c52] disabled:opacity-60 transition-colors"
+                        className="btn-ripple w-full rounded-2xl border border-gray-200 dark:border-[#344051] bg-white dark:bg-[#1b2430] px-4 py-3 text-md-on-surface dark:text-gray-100 hover:bg-md-surface dark:hover:bg-[#242d3a] disabled:opacity-60 transition-colors"
                     >
                         {oauthSubmitting
                             ? "Redirecting to Google..."
@@ -301,7 +301,7 @@ export default function LoginPage() {
                                 Name
                             </label>
                             <input
-                                className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] bg-white dark:bg-[#132244] text-md-on-surface dark:text-white placeholder-md-subtitle dark:placeholder-gray-400 px-3 py-2 shadow-sm"
+                                className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#344051] bg-white dark:bg-[#1b2430] text-md-on-surface dark:text-white placeholder-md-subtitle dark:placeholder-gray-400 px-3 py-2 shadow-sm"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Ada Lovelace"
@@ -316,7 +316,7 @@ export default function LoginPage() {
                             Email
                         </label>
                         <input
-                            className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] bg-white dark:bg-[#132244] text-md-on-surface dark:text-white placeholder-md-subtitle dark:placeholder-gray-400 px-3 py-2 shadow-sm"
+                            className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#344051] bg-white dark:bg-[#1b2430] text-md-on-surface dark:text-white placeholder-md-subtitle dark:placeholder-gray-400 px-3 py-2 shadow-sm"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -331,7 +331,7 @@ export default function LoginPage() {
                             Password
                         </label>
                         <input
-                            className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] bg-white dark:bg-[#132244] text-md-on-surface dark:text-white placeholder-md-subtitle dark:placeholder-gray-400 px-3 py-2 shadow-sm"
+                            className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#344051] bg-white dark:bg-[#1b2430] text-md-on-surface dark:text-white placeholder-md-subtitle dark:placeholder-gray-400 px-3 py-2 shadow-sm"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
