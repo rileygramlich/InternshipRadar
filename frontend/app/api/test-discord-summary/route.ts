@@ -563,6 +563,85 @@ async function sendToDiscordWebhook(
     }
 }
 
+function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function buildSummaryEmailHtml(embed: DiscordEmbed): string {
+    const fieldsHtml = embed.fields
+        .map(
+            (field) => `
+                <div style="margin-bottom: 12px;">
+                    <div style="font-weight: 700; margin-bottom: 4px;">${escapeHtml(field.name)}</div>
+                    <div>${escapeHtml(field.value).replace(/\n/g, "<br />")}</div>
+                </div>
+            `,
+        )
+        .join("\n");
+
+    return `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 680px; margin: 0 auto;">
+            <h2 style="margin-bottom: 8px;">${escapeHtml(embed.title)}</h2>
+            <p style="margin-top: 0; white-space: pre-line;">${escapeHtml(embed.description)}</p>
+            <hr style="border: 0; border-top: 1px solid #e5e5e5; margin: 20px 0;" />
+            ${fieldsHtml}
+            <hr style="border: 0; border-top: 1px solid #e5e5e5; margin: 20px 0;" />
+            <p style="color: #666; font-size: 12px; margin: 0;">${escapeHtml(embed.footer.text)}</p>
+        </div>
+    `;
+}
+
+function buildSummaryEmailText(embed: DiscordEmbed): string {
+    const fieldsText = embed.fields
+        .map((field) => `${field.name}\n${field.value}`)
+        .join("\n\n");
+
+    return `${embed.title}\n\n${embed.description}\n\n${fieldsText}\n\n${embed.footer.text}`;
+}
+
+async function sendSummaryEmail(
+    toEmail: string,
+    embed: DiscordEmbed,
+): Promise<void> {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const fromEmail = process.env.SUMMARY_EMAIL_FROM;
+
+    if (!resendApiKey) {
+        throw new Error("RESEND_API_KEY is not configured");
+    }
+
+    if (!fromEmail) {
+        throw new Error("SUMMARY_EMAIL_FROM is not configured");
+    }
+
+    const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            from: fromEmail,
+            to: [toEmail],
+            subject: "Internship Radar Weekly Summary",
+            html: buildSummaryEmailHtml(embed),
+            text: buildSummaryEmailText(embed),
+        }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+            `Email send failed with status ${response.status}: ${errorText}`,
+        );
+    }
+}
+
 // ============================================================================
 // MAIN ENDPOINT HANDLER
 // ============================================================================
@@ -584,7 +663,7 @@ export async function POST(request: NextRequest) {
         // Step 3: Fetch user profile (lookup by email, same as /api/profiles/me)
         const { data: profile, error: profileError } = await supabase
             .from("profiles")
-            .select("id, discord_webhook_url, name")
+            .select("id, discord_webhook_url, name, email")
             .ilike("email", user.email)
             .limit(1)
             .maybeSingle();
@@ -593,15 +672,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 { error: "Profile not found" },
                 { status: 404 },
-            );
-        }
-
-        if (!profile.discord_webhook_url) {
-            return NextResponse.json(
-                {
-                    error: "No Discord webhook configured. Please add one in your profile settings.",
-                },
-                { status: 400 },
             );
         }
 
@@ -623,7 +693,7 @@ export async function POST(request: NextRequest) {
             previousApplicationStats,
         );
 
-        // Step 8: Build Discord embed
+        // Step 8: Build summary payload used for both Discord and email
         const embed = buildDiscordEmbed(
             currentStats,
             deltas,
@@ -632,16 +702,40 @@ export async function POST(request: NextRequest) {
             applicationDeltas,
         );
 
-        // Step 9: Send to user's webhook
-        await sendToDiscordWebhook(profile.discord_webhook_url, embed);
-        console.log(
-            `✅ Test summary sent to ${profile.name || user.email}: ${profile.discord_webhook_url.slice(0, 50)}...`,
-        );
+        // Step 9: Send via Discord if webhook exists, otherwise fallback to email
+        let deliveryChannel: "discord" | "email";
+        if (profile.discord_webhook_url) {
+            await sendToDiscordWebhook(profile.discord_webhook_url, embed);
+            deliveryChannel = "discord";
+            console.log(
+                `✅ Test summary sent to Discord for ${profile.name || user.email}: ${profile.discord_webhook_url.slice(0, 50)}...`,
+            );
+        } else {
+            const recipientEmail = (profile.email || user.email || "").trim();
+            if (!recipientEmail) {
+                return NextResponse.json(
+                    {
+                        error: "No Discord webhook or email found for this profile.",
+                    },
+                    { status: 400 },
+                );
+            }
+
+            await sendSummaryEmail(recipientEmail, embed);
+            deliveryChannel = "email";
+            console.log(
+                `✅ Test summary sent by email for ${profile.name || user.email}: ${recipientEmail}`,
+            );
+        }
 
         return NextResponse.json(
             {
                 success: true,
-                message: `Test summary sent successfully to your Discord!`,
+                message:
+                    deliveryChannel === "discord"
+                        ? "Test summary sent successfully to your Discord!"
+                        : "Test summary sent successfully to your email!",
+                deliveryChannel,
                 stats: currentStats,
             },
             { status: 200 },

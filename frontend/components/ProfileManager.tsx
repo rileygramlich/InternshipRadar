@@ -564,11 +564,12 @@ export default function ProfileManager() {
             {profile?.email === "rgram060@mtroyal.ca" && (
                 <div className="rounded-2xl bg-white p-6 shadow-md3-1 dark:bg-[#0f1115] border-2 border-orange-500 dark:border-orange-600">
                     <h2 className="text-xl font-semibold text-md-on-surface dark:text-white mb-4">
-                        🧪 Test Discord Summary
+                        🧪 Test Weekly Summary
                     </h2>
                     <p className="text-sm text-md-subtitle dark:text-gray-400 mb-4">
-                        Send a test Discord summary to your webhook to verify
-                        it's working correctly.
+                        Send a test weekly summary. It will use Discord when a
+                        webhook is configured, otherwise it will send to your
+                        account email.
                     </p>
                     {testError && (
                         <p className="text-sm text-red-600 dark:text-red-400 mb-3">
@@ -582,9 +583,7 @@ export default function ProfileManager() {
                     )}
                     <button
                         onClick={handleTestDiscordSummary}
-                        disabled={
-                            testingSummary || !profile?.discord_webhook_url
-                        }
+                        disabled={testingSummary}
                         className="btn-ripple px-5 py-2 rounded-2xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 disabled:opacity-60 transition-colors"
                     >
                         {testingSummary ? "Sending…" : "Send Test Summary"}

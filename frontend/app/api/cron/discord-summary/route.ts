@@ -19,8 +19,6 @@ function verifyCronSecret(request: NextRequest): boolean {
 // ============================================================================
 // SUPABASE CLIENT INITIALIZATION
 // ============================================================================
-type SupabaseClient = any;
-
 function getSupabaseClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -37,9 +35,6 @@ function getSupabaseClient() {
     });
 }
 
-// ============================================================================
-// DATA FETCHING LOGIC
-// ============================================================================
 interface JobStats {
     totalJobs: number;
     jobsByTerm: Record<string, number>;
@@ -48,120 +43,25 @@ interface JobStats {
     timestamp: Date;
 }
 
-interface JobPostingSummaryRow {
-    term?: string | null;
-    location?: string | null;
+type ApplicationStatus =
+    | "saved"
+    | "applied"
+    | "interview"
+    | "offer"
+    | "rejected";
+
+interface ProfileApplicationStats {
+    applicationsThisWeek: number;
+    applicationsByStatusThisWeek: Record<ApplicationStatus, number>;
 }
 
-function isCalgaryJob(location: string | null | undefined): boolean {
-    return Boolean(location?.toLowerCase().includes("calgary"));
+interface ProfileSummaryRecipient {
+    id: string;
+    name: string | null;
+    email: string | null;
+    discord_webhook_url: string | null;
 }
 
-async function fetchCurrentStats(
-    supabase: SupabaseClient,
-): Promise<JobStats> {
-    // Fetch all active jobs
-    const { data: allJobs, error: allJobsError } = await supabase
-        .from("job_postings")
-        .select("term, location")
-        .eq("is_active", true);
-
-    if (allJobsError) {
-        throw new Error(`Failed to fetch all jobs: ${allJobsError.message}`);
-    }
-
-    // Fetch jobs added in the last 7 days
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const { data: newJobs, error: newJobsError } = await supabase
-        .from("job_postings")
-        .select("id")
-        .eq("is_active", true)
-        .gte("created_at", sevenDaysAgo.toISOString());
-
-    if (newJobsError) {
-        throw new Error(`Failed to fetch new jobs: ${newJobsError.message}`);
-    }
-
-    // Process the data
-    const totalJobs = allJobs?.length ?? 0;
-    const newJobsThisWeek = newJobs?.length ?? 0;
-    const calgaryJobs =
-        allJobs?.filter((job: JobPostingSummaryRow) => isCalgaryJob(job.location))
-            .length ?? 0;
-
-    // Group jobs by term
-    const jobsByTerm: Record<string, number> = {};
-    allJobs?.forEach((job: JobPostingSummaryRow) => {
-        const term = job.term || "Unknown";
-        jobsByTerm[term] = (jobsByTerm[term] ?? 0) + 1;
-    });
-
-    return {
-        totalJobs,
-        jobsByTerm,
-        newJobsThisWeek,
-        calgaryJobs,
-        timestamp: new Date(),
-    };
-}
-
-// ============================================================================
-// STATS PERSISTENCE: Store and retrieve weekly snapshots
-// ============================================================================
-async function getLastWeekStats(
-    supabase: SupabaseClient,
-): Promise<JobStats | null> {
-    const { data, error } = await supabase
-        .from("internship_radar_stats")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-    if (error) {
-        console.warn(`Could not retrieve last week's stats: ${error.message}`);
-        return null;
-    }
-
-    if (!data || data.length === 0) {
-        console.warn("No previous stats found - this may be the first run");
-        return null;
-    }
-
-    const record = data[0];
-    return {
-        totalJobs: record.total_jobs,
-        jobsByTerm: record.jobs_by_term || {},
-        newJobsThisWeek: record.new_jobs_this_week,
-        calgaryJobs: record.alberta_jobs,
-        timestamp: new Date(record.created_at),
-    };
-}
-
-async function saveCurrentStats(
-    supabase: SupabaseClient,
-    stats: JobStats,
-): Promise<void> {
-    const { error } = await supabase.from("internship_radar_stats").insert([
-        {
-            total_jobs: stats.totalJobs,
-            jobs_by_term: stats.jobsByTerm,
-            new_jobs_this_week: stats.newJobsThisWeek,
-            alberta_jobs: stats.calgaryJobs,
-            created_at: new Date().toISOString(),
-        },
-    ]);
-
-    if (error) {
-        console.error(`Failed to save stats: ${error.message}`);
-        // Don't throw - this shouldn't stop the Discord message from being sent
-    }
-}
-
-// ============================================================================
-// DELTA CALCULATION WITH FALLBACK
-// ============================================================================
 interface DeltaMetrics {
     totalJobsDelta: number | null;
     totalJobsPercentChange: number | null;
@@ -171,55 +71,14 @@ interface DeltaMetrics {
     hasLastWeekData: boolean;
 }
 
-function calculateDeltas(
-    currentStats: JobStats,
-    lastWeekStats: JobStats | null,
-): DeltaMetrics {
-    if (!lastWeekStats) {
-        // Fallback: No previous data, so no deltas to calculate
-        return {
-            totalJobsDelta: null,
-            totalJobsPercentChange: null,
-            newJobsDelta: null,
-            calgaryJobsDelta: null,
-            calgaryJobsPercentChange: null,
-            hasLastWeekData: false,
-        };
-    }
-
-    const totalJobsDelta = currentStats.totalJobs - lastWeekStats.totalJobs;
-    const totalJobsPercentChange =
-        lastWeekStats.totalJobs > 0
-            ? ((totalJobsDelta / lastWeekStats.totalJobs) * 100).toFixed(1)
-            : null;
-
-    const newJobsDelta =
-        currentStats.newJobsThisWeek - lastWeekStats.newJobsThisWeek;
-
-    const calgaryJobsDelta =
-        currentStats.calgaryJobs - lastWeekStats.calgaryJobs;
-    const calgaryJobsPercentChange =
-        lastWeekStats.calgaryJobs > 0
-            ? ((calgaryJobsDelta / lastWeekStats.calgaryJobs) * 100).toFixed(1)
-            : null;
-
-    return {
-        totalJobsDelta,
-        totalJobsPercentChange: totalJobsPercentChange
-            ? Number(totalJobsPercentChange)
-            : null,
-        newJobsDelta,
-        calgaryJobsDelta,
-        calgaryJobsPercentChange: calgaryJobsPercentChange
-            ? Number(calgaryJobsPercentChange)
-            : null,
-        hasLastWeekData: true,
-    };
+interface ProfileApplicationDeltas {
+    applicationsThisWeekDelta: number | null;
+    applicationsThisWeekPercentChange: number | null;
+    statusDelta: Record<ApplicationStatus, number | null>;
+    statusPercentChange: Record<ApplicationStatus, number | null>;
+    hasLastWeekData: boolean;
 }
 
-// ============================================================================
-// DISCORD EMBED FORMATTING
-// ============================================================================
 interface DiscordEmbed {
     title: string;
     description: string;
@@ -236,21 +95,340 @@ interface DiscordEmbed {
     timestamp: string;
 }
 
+interface DeliveryResult {
+    profileId: string;
+    profileName: string;
+    channel: "discord" | "email" | "none";
+    success: boolean;
+    error?: string;
+}
+
+function isCalgaryJob(location: string | null | undefined): boolean {
+    return Boolean(location?.toLowerCase().includes("calgary"));
+}
+
+function getEmptyStatusCounts(): Record<ApplicationStatus, number> {
+    return {
+        saved: 0,
+        applied: 0,
+        interview: 0,
+        offer: 0,
+        rejected: 0,
+    };
+}
+
+function isValidApplicationStatus(status: string): status is ApplicationStatus {
+    return (
+        status === "saved" ||
+        status === "applied" ||
+        status === "interview" ||
+        status === "offer" ||
+        status === "rejected"
+    );
+}
+
+async function fetchCurrentStats(supabase: any): Promise<JobStats> {
+    const { data: allJobs, error: allJobsError } = (await supabase
+        .from("job_postings")
+        .select("location, created_at")) as {
+        data: Array<{ location: string | null; created_at: string }> | null;
+        error: any;
+    };
+
+    if (allJobsError) {
+        throw new Error(`Failed to fetch all jobs: ${allJobsError.message}`);
+    }
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const totalJobs = allJobs?.length ?? 0;
+    const newJobsThisWeek =
+        allJobs?.filter((job) => new Date(job.created_at) >= sevenDaysAgo)
+            .length ?? 0;
+    const calgaryJobs =
+        allJobs?.filter((job) => isCalgaryJob(job.location)).length ?? 0;
+
+    return {
+        totalJobs,
+        jobsByTerm: {},
+        newJobsThisWeek,
+        calgaryJobs,
+        timestamp: new Date(),
+    };
+}
+
+async function getLastWeekStats(supabase: any): Promise<JobStats | null> {
+    const { data, error } = (await supabase
+        .from("internship_radar_stats")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(1)) as {
+        data: Array<{
+            total_jobs: number;
+            jobs_by_term: Record<string, number>;
+            new_jobs_this_week: number;
+            alberta_jobs: number;
+            created_at: string;
+        }> | null;
+        error: any;
+    };
+
+    if (error) {
+        console.warn(`Could not retrieve last week's stats: ${error.message}`);
+        return null;
+    }
+
+    if (!data || data.length === 0) {
+        return null;
+    }
+
+    const record = data[0];
+    return {
+        totalJobs: record.total_jobs,
+        jobsByTerm: record.jobs_by_term || {},
+        newJobsThisWeek: record.new_jobs_this_week,
+        calgaryJobs: record.alberta_jobs,
+        timestamp: new Date(record.created_at),
+    };
+}
+
+async function saveCurrentStats(supabase: any, stats: JobStats): Promise<void> {
+    const { error } = await supabase.from("internship_radar_stats").insert([
+        {
+            total_jobs: stats.totalJobs,
+            jobs_by_term: stats.jobsByTerm,
+            new_jobs_this_week: stats.newJobsThisWeek,
+            alberta_jobs: stats.calgaryJobs,
+            created_at: new Date().toISOString(),
+        },
+    ]);
+
+    if (error) {
+        console.error(`Failed to save stats: ${error.message}`);
+    }
+}
+
+async function fetchRecipients(supabase: any): Promise<ProfileSummaryRecipient[]> {
+    const { data, error } = (await supabase
+        .from("profiles")
+        .select("id, name, email, discord_webhook_url")) as {
+        data: ProfileSummaryRecipient[] | null;
+        error: any;
+    };
+
+    if (error) {
+        throw new Error(`Failed to fetch profiles: ${error.message}`);
+    }
+
+    return (data || []).filter((profile) => {
+        const webhook = (profile.discord_webhook_url || "").trim();
+        const email = (profile.email || "").trim();
+        return webhook.length > 0 || email.length > 0;
+    });
+}
+
+async function fetchProfileApplicationStats(
+    supabase: any,
+    profileId: string,
+): Promise<{
+    current: ProfileApplicationStats;
+    previous: ProfileApplicationStats;
+}> {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const fourteenDaysAgo = new Date(now);
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    const { data: currentWeekApplications, error: currentWeekError } =
+        (await supabase
+            .from("applications")
+            .select("status")
+            .eq("profile_id", profileId)
+            .gte("created_at", sevenDaysAgo.toISOString())) as {
+            data: Array<{ status: string }> | null;
+            error: any;
+        };
+
+    if (currentWeekError) {
+        throw new Error(
+            `Failed to fetch current week applications: ${currentWeekError.message}`,
+        );
+    }
+
+    const { data: previousWeekApplications, error: previousWeekError } =
+        (await supabase
+            .from("applications")
+            .select("status")
+            .eq("profile_id", profileId)
+            .gte("created_at", fourteenDaysAgo.toISOString())
+            .lt("created_at", sevenDaysAgo.toISOString())) as {
+            data: Array<{ status: string }> | null;
+            error: any;
+        };
+
+    if (previousWeekError) {
+        throw new Error(
+            `Failed to fetch previous week applications: ${previousWeekError.message}`,
+        );
+    }
+
+    const currentByStatus = getEmptyStatusCounts();
+    (currentWeekApplications ?? []).forEach((application) => {
+        if (isValidApplicationStatus(application.status)) {
+            currentByStatus[application.status] += 1;
+        }
+    });
+
+    const previousByStatus = getEmptyStatusCounts();
+    (previousWeekApplications ?? []).forEach((application) => {
+        if (isValidApplicationStatus(application.status)) {
+            previousByStatus[application.status] += 1;
+        }
+    });
+
+    return {
+        current: {
+            applicationsThisWeek: currentWeekApplications?.length ?? 0,
+            applicationsByStatusThisWeek: currentByStatus,
+        },
+        previous: {
+            applicationsThisWeek: previousWeekApplications?.length ?? 0,
+            applicationsByStatusThisWeek: previousByStatus,
+        },
+    };
+}
+
+function calculateDeltas(
+    currentStats: JobStats,
+    lastWeekStats: JobStats | null,
+): DeltaMetrics {
+    if (!lastWeekStats) {
+        return {
+            totalJobsDelta: null,
+            totalJobsPercentChange: null,
+            newJobsDelta: null,
+            calgaryJobsDelta: null,
+            calgaryJobsPercentChange: null,
+            hasLastWeekData: false,
+        };
+    }
+
+    const totalJobsDelta = currentStats.totalJobs - lastWeekStats.totalJobs;
+    const totalJobsPercentChange =
+        lastWeekStats.totalJobs > 0
+            ? Number(((totalJobsDelta / lastWeekStats.totalJobs) * 100).toFixed(1))
+            : null;
+
+    const newJobsDelta =
+        currentStats.newJobsThisWeek - lastWeekStats.newJobsThisWeek;
+
+    const calgaryJobsDelta = currentStats.calgaryJobs - lastWeekStats.calgaryJobs;
+    const calgaryJobsPercentChange =
+        lastWeekStats.calgaryJobs > 0
+            ? Number(((calgaryJobsDelta / lastWeekStats.calgaryJobs) * 100).toFixed(1))
+            : null;
+
+    return {
+        totalJobsDelta,
+        totalJobsPercentChange,
+        newJobsDelta,
+        calgaryJobsDelta,
+        calgaryJobsPercentChange,
+        hasLastWeekData: true,
+    };
+}
+
+function calculateProfileApplicationDeltas(
+    current: ProfileApplicationStats,
+    previous: ProfileApplicationStats,
+): ProfileApplicationDeltas {
+    const hasPreviousWeekData = previous.applicationsThisWeek > 0;
+
+    const statusDelta: Record<ApplicationStatus, number | null> = {
+        saved: null,
+        applied: null,
+        interview: null,
+        offer: null,
+        rejected: null,
+    };
+
+    const statusPercentChange: Record<ApplicationStatus, number | null> = {
+        saved: null,
+        applied: null,
+        interview: null,
+        offer: null,
+        rejected: null,
+    };
+
+    const statuses: ApplicationStatus[] = [
+        "saved",
+        "applied",
+        "interview",
+        "offer",
+        "rejected",
+    ];
+
+    statuses.forEach((status) => {
+        const delta =
+            current.applicationsByStatusThisWeek[status] -
+            previous.applicationsByStatusThisWeek[status];
+        statusDelta[status] = hasPreviousWeekData ? delta : null;
+
+        if (hasPreviousWeekData && previous.applicationsByStatusThisWeek[status] > 0) {
+            statusPercentChange[status] = Number(
+                (
+                    (delta / previous.applicationsByStatusThisWeek[status]) *
+                    100
+                ).toFixed(1),
+            );
+        }
+    });
+
+    const applicationsThisWeekDelta =
+        current.applicationsThisWeek - previous.applicationsThisWeek;
+
+    const applicationsThisWeekPercentChange =
+        hasPreviousWeekData && previous.applicationsThisWeek > 0
+            ? Number(
+                  (
+                      (applicationsThisWeekDelta /
+                          previous.applicationsThisWeek) *
+                      100
+                  ).toFixed(1),
+              )
+            : null;
+
+    return {
+        applicationsThisWeekDelta: hasPreviousWeekData
+            ? applicationsThisWeekDelta
+            : null,
+        applicationsThisWeekPercentChange,
+        statusDelta,
+        statusPercentChange,
+        hasLastWeekData: hasPreviousWeekData,
+    };
+}
+
 function buildDiscordEmbed(
     stats: JobStats,
     deltas: DeltaMetrics,
+    profileName: string,
+    applicationStats: ProfileApplicationStats,
+    applicationDeltas: ProfileApplicationDeltas,
 ): DiscordEmbed {
     const baseUrl =
         process.env.NEXT_PUBLIC_APP_URL || "https://internshipradar.ca";
 
-    // Format the main stats section
     let description = `📊 **Weekly Internship Summary** 📊\n\n`;
     description += `🍁 Check out the latest Canadian tech internships on **Internship Radar**!\n\n`;
+    description += `🙌 Personalized for **${profileName}** with your weekly application progress.\n\n`;
 
-    // Build field values with deltas
     const totalJobsValue = `**${stats.totalJobs}** open positions${
         deltas.hasLastWeekData && deltas.totalJobsDelta !== null
-            ? ` ${deltas.totalJobsDelta >= 0 ? "📈" : "📉"} ${deltas.totalJobsDelta > 0 ? "+" : ""}${deltas.totalJobsDelta} (${deltas.totalJobsPercentChange}%)`
+            ? ` ${deltas.totalJobsDelta >= 0 ? "📈" : "📉"} ${deltas.totalJobsDelta > 0 ? "+" : ""}${deltas.totalJobsDelta}${deltas.totalJobsPercentChange !== null ? ` (${deltas.totalJobsPercentChange}%)` : ""}`
             : ""
     }`;
 
@@ -262,15 +440,46 @@ function buildDiscordEmbed(
 
     const calgaryJobsValue = `🏙️ **${stats.calgaryJobs}** positions in Calgary${
         deltas.hasLastWeekData && deltas.calgaryJobsDelta !== null
-            ? ` ${deltas.calgaryJobsDelta >= 0 ? "📈" : "📉"} ${deltas.calgaryJobsDelta > 0 ? "+" : ""}${deltas.calgaryJobsDelta} (${deltas.calgaryJobsPercentChange}%)`
+            ? ` ${deltas.calgaryJobsDelta >= 0 ? "📈" : "📉"} ${deltas.calgaryJobsDelta > 0 ? "+" : ""}${deltas.calgaryJobsDelta}${deltas.calgaryJobsPercentChange !== null ? ` (${deltas.calgaryJobsPercentChange}%)` : ""}`
             : ""
     }`;
 
-    const fields: Array<{
-        name: string;
-        value: string;
-        inline: boolean;
-    }> = [
+    const applicationsThisWeekValue = `**${applicationStats.applicationsThisWeek}** applications this week${
+        applicationDeltas.hasLastWeekData &&
+        applicationDeltas.applicationsThisWeekDelta !== null
+            ? ` ${applicationDeltas.applicationsThisWeekDelta >= 0 ? "📈" : "📉"} ${applicationDeltas.applicationsThisWeekDelta > 0 ? "+" : ""}${applicationDeltas.applicationsThisWeekDelta}${applicationDeltas.applicationsThisWeekPercentChange !== null ? ` (${applicationDeltas.applicationsThisWeekPercentChange}%)` : ""}`
+            : ""
+    }`;
+
+    const applicationStatusLabels: Record<ApplicationStatus, string> = {
+        saved: "Saved",
+        applied: "Applied",
+        interview: "Interview",
+        offer: "Offer",
+        rejected: "Rejected",
+    };
+
+    const applicationStatusBreakdown = (
+        ["saved", "applied", "interview", "offer", "rejected"] as ApplicationStatus[]
+    )
+        .map((status) => {
+            const currentValue = applicationStats.applicationsByStatusThisWeek[status];
+            const delta = applicationDeltas.statusDelta[status];
+            const percent = applicationDeltas.statusPercentChange[status];
+
+            if (!applicationDeltas.hasLastWeekData || delta === null) {
+                return `• ${applicationStatusLabels[status]}: **${currentValue}**`;
+            }
+
+            const sign = delta > 0 ? "+" : "";
+            const trendEmoji = delta >= 0 ? "📈" : "📉";
+            const percentText = percent !== null ? ` (${percent}%)` : "";
+
+            return `• ${applicationStatusLabels[status]}: **${currentValue}** ${trendEmoji} ${sign}${delta}${percentText}`;
+        })
+        .join("\n");
+
+    const fields: Array<{ name: string; value: string; inline: boolean }> = [
         {
             name: "💼 Total Open Positions",
             value: totalJobsValue,
@@ -286,93 +495,45 @@ function buildDiscordEmbed(
             value: calgaryJobsValue,
             inline: false,
         },
-    ];
-
-    // Add breakdown by term if available
-    if (Object.keys(stats.jobsByTerm).length > 0) {
-        const termBreakdown = Object.entries(stats.jobsByTerm)
-            .map(([term, count]) => `• ${term}: **${count}**`)
-            .join("\n");
-
-        fields.push({
-            name: "🗓️ Breakdown by Season",
-            value: termBreakdown,
+        {
+            name: "🧭 Your Application Activity",
+            value: applicationsThisWeekValue,
             inline: false,
-        });
-    }
-
-    // Add a call-to-action field
-    fields.push({
-        name: "🔗 Ready to Apply?",
-        value: `[Browse on Internship Radar](${baseUrl})`,
-        inline: false,
-    });
+        },
+        {
+            name: "📌 Your Weekly Status Breakdown",
+            value: applicationStatusBreakdown,
+            inline: false,
+        },
+        {
+            name: "🔗 Ready to Apply?",
+            value: `[Browse on Internship Radar](${baseUrl})`,
+            inline: false,
+        },
+    ];
 
     return {
         title: "Weekly Internship Summary 📋",
         description,
-        color: 0x1f9fff, // A nice teal blue
+        color: 3447003,
         fields,
         footer: {
-            text: "Internship Radar • Tracking Canadian Tech Internships",
-            icon_url: "🍁",
+            text: "Internship Radar 🎯",
         },
         timestamp: new Date().toISOString(),
     };
-}
-
-// ============================================================================
-// FETCH PROFILES WITH DISCORD WEBHOOKS
-// ============================================================================
-interface ProfileWithWebhook {
-    id: string;
-    name: string | null;
-    discord_webhook_url: string;
-}
-
-async function fetchProfilesWithWebhooks(
-    supabase: SupabaseClient,
-): Promise<ProfileWithWebhook[]> {
-    const { data, error } = await supabase
-        .from("profiles")
-        .select("id, name, discord_webhook_url")
-        .not("discord_webhook_url", "is", null)
-        .neq("discord_webhook_url", ""); // Exclude empty strings
-
-    if (error) {
-        throw new Error(
-            `Failed to fetch profiles with webhooks: ${error.message}`,
-        );
-    }
-
-    return (data as ProfileWithWebhook[]) || [];
-}
-
-// ============================================================================
-// DISCORD WEBHOOK SENDER (Per-User & Global)
-// ============================================================================
-interface WebhookSendResult {
-    webhookUrl: string;
-    profileId?: string;
-    profileName?: string;
-    success: boolean;
-    error?: string;
 }
 
 async function sendToDiscordWebhook(
     webhookUrl: string,
     embed: DiscordEmbed,
 ): Promise<void> {
-    const payload = {
-        embeds: [embed],
-    };
-
     const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ embeds: [embed] }),
     });
 
     if (!response.ok) {
@@ -383,77 +544,107 @@ async function sendToDiscordWebhook(
     }
 }
 
-async function sendToAllUserWebhooks(
-    profiles: ProfileWithWebhook[],
-    embed: DiscordEmbed,
-): Promise<WebhookSendResult[]> {
-    const results: WebhookSendResult[] = [];
-
-    for (const profile of profiles) {
-        try {
-            await sendToDiscordWebhook(profile.discord_webhook_url, embed);
-            results.push({
-                webhookUrl: profile.discord_webhook_url,
-                profileId: profile.id,
-                profileName: profile.name ?? "Unknown",
-                success: true,
-            });
-            console.log(
-                `✅ Sent summary to ${profile.name || profile.id}: ${profile.discord_webhook_url.slice(0, 50)}...`,
-            );
-        } catch (error) {
-            const errorMsg =
-                error instanceof Error ? error.message : String(error);
-            results.push({
-                webhookUrl: profile.discord_webhook_url,
-                profileId: profile.id,
-                profileName: profile.name ?? "Unknown",
-                success: false,
-                error: errorMsg,
-            });
-            console.error(
-                `❌ Failed to send to ${profile.name || profile.id}: ${errorMsg}`,
-            );
-        }
-    }
-
-    return results;
+function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }
 
-async function sendToGlobalWebhook(
-    embed: DiscordEmbed,
-): Promise<WebhookSendResult | null> {
-    const globalWebhook = process.env.DISCORD_WEBHOOK_URL;
+function buildSummaryEmailHtml(embed: DiscordEmbed): string {
+    const fieldsHtml = embed.fields
+        .map(
+            (field) => `
+                <div style="margin-bottom: 12px;">
+                    <div style="font-weight: 700; margin-bottom: 4px;">${escapeHtml(field.name)}</div>
+                    <div>${escapeHtml(field.value).replace(/\n/g, "<br />")}</div>
+                </div>
+            `,
+        )
+        .join("\n");
 
-    if (!globalWebhook) {
-        console.log("ℹ️ No global DISCORD_WEBHOOK_URL configured (optional)");
-        return null;
+    return `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 680px; margin: 0 auto;">
+            <h2 style="margin-bottom: 8px;">${escapeHtml(embed.title)}</h2>
+            <p style="margin-top: 0; white-space: pre-line;">${escapeHtml(embed.description)}</p>
+            <hr style="border: 0; border-top: 1px solid #e5e5e5; margin: 20px 0;" />
+            ${fieldsHtml}
+            <hr style="border: 0; border-top: 1px solid #e5e5e5; margin: 20px 0;" />
+            <p style="color: #666; font-size: 12px; margin: 0;">${escapeHtml(embed.footer.text)}</p>
+        </div>
+    `;
+}
+
+function buildSummaryEmailText(embed: DiscordEmbed): string {
+    const fieldsText = embed.fields
+        .map((field) => `${field.name}\n${field.value}`)
+        .join("\n\n");
+
+    return `${embed.title}\n\n${embed.description}\n\n${fieldsText}\n\n${embed.footer.text}`;
+}
+
+async function sendSummaryEmail(
+    toEmail: string,
+    embed: DiscordEmbed,
+): Promise<void> {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const fromEmail = process.env.SUMMARY_EMAIL_FROM;
+
+    if (!resendApiKey) {
+        throw new Error("RESEND_API_KEY is not configured");
     }
 
-    try {
-        await sendToDiscordWebhook(globalWebhook, embed);
-        console.log("✅ Sent summary to global Discord webhook");
-        return {
-            webhookUrl: globalWebhook,
-            success: true,
-        };
-    } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        console.error(`❌ Failed to send to global webhook: ${errorMsg}`);
-        return {
-            webhookUrl: globalWebhook,
-            success: false,
-            error: errorMsg,
-        };
+    if (!fromEmail) {
+        throw new Error("SUMMARY_EMAIL_FROM is not configured");
+    }
+
+    const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            from: fromEmail,
+            to: [toEmail],
+            subject: "Internship Radar Weekly Summary",
+            html: buildSummaryEmailHtml(embed),
+            text: buildSummaryEmailText(embed),
+        }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+            `Email send failed with status ${response.status}: ${errorText}`,
+        );
     }
 }
 
-// ============================================================================
-// MAIN ENDPOINT HANDLER
-// ============================================================================
+async function deliverSummary(
+    recipient: ProfileSummaryRecipient,
+    embed: DiscordEmbed,
+): Promise<{ channel: "discord" | "email" }> {
+    const webhook = (recipient.discord_webhook_url || "").trim();
+    const email = (recipient.email || "").trim();
+
+    if (webhook) {
+        await sendToDiscordWebhook(webhook, embed);
+        return { channel: "discord" };
+    }
+
+    if (email) {
+        await sendSummaryEmail(email, embed);
+        return { channel: "email" };
+    }
+
+    throw new Error("Profile has neither webhook nor email");
+}
+
 export async function GET(request: NextRequest) {
     try {
-        // Step 1: Verify security
         if (!verifyCronSecret(request)) {
             return NextResponse.json(
                 { error: "Unauthorized: Invalid CRON_SECRET" },
@@ -461,72 +652,87 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Step 2: Initialize Supabase client
         const supabase = getSupabaseClient();
 
-        // Step 3: Fetch current stats
         const currentStats = await fetchCurrentStats(supabase);
-        console.log("📊 Current stats fetched:", currentStats);
-
-        // Step 4: Fetch last week's stats (for delta calculation)
         const lastWeekStats = await getLastWeekStats(supabase);
-        console.log(
-            "📈 Last week stats retrieved:",
-            lastWeekStats ? "Found" : "None (first run)",
-        );
-
-        // Step 5: Calculate deltas (with fallback if no last week data)
         const deltas = calculateDeltas(currentStats, lastWeekStats);
-        console.log("🔢 Deltas calculated:", deltas);
 
-        // Step 6: Build Discord embed
-        const embed = buildDiscordEmbed(currentStats, deltas);
+        const recipients = await fetchRecipients(supabase);
+        const deliveryResults: DeliveryResult[] = [];
 
-        // Step 7a: Fetch all profiles with Discord webhooks
-        const profilesWithWebhooks = await fetchProfilesWithWebhooks(supabase);
-        console.log(
-            `👥 Found ${profilesWithWebhooks.length} profiles with Discord webhooks`,
-        );
+        for (const recipient of recipients) {
+            try {
+                const {
+                    current: currentApplicationStats,
+                    previous: previousApplicationStats,
+                } = await fetchProfileApplicationStats(supabase, recipient.id);
 
-        // Step 7b: Send to all user webhooks
-        const userResults = await sendToAllUserWebhooks(
-            profilesWithWebhooks,
-            embed,
-        );
+                const applicationDeltas = calculateProfileApplicationDeltas(
+                    currentApplicationStats,
+                    previousApplicationStats,
+                );
 
-        // Step 7c: Send to global webhook (optional)
-        const globalResult = await sendToGlobalWebhook(embed);
+                const embed = buildDiscordEmbed(
+                    currentStats,
+                    deltas,
+                    recipient.name || recipient.email || "Internship Radar User",
+                    currentApplicationStats,
+                    applicationDeltas,
+                );
 
-        // Step 8: Save current stats for next week's comparison
+                const delivery = await deliverSummary(recipient, embed);
+
+                deliveryResults.push({
+                    profileId: recipient.id,
+                    profileName: recipient.name || recipient.email || recipient.id,
+                    channel: delivery.channel,
+                    success: true,
+                });
+            } catch (error) {
+                const errorMessage =
+                    error instanceof Error ? error.message : String(error);
+
+                deliveryResults.push({
+                    profileId: recipient.id,
+                    profileName: recipient.name || recipient.email || recipient.id,
+                    channel: "none",
+                    success: false,
+                    error: errorMessage,
+                });
+            }
+        }
+
         await saveCurrentStats(supabase, currentStats);
-        console.log("💾 Current stats saved for next week");
 
-        // Compile results summary
-        const successCount = userResults.filter((r) => r.success).length;
-        const failureCount = userResults.filter((r) => !r.success).length;
+        const successful = deliveryResults.filter((result) => result.success);
+        const failed = deliveryResults.filter((result) => !result.success);
+        const discordCount = successful.filter(
+            (result) => result.channel === "discord",
+        ).length;
+        const emailCount = successful.filter(
+            (result) => result.channel === "email",
+        ).length;
 
         return NextResponse.json(
             {
                 success: true,
-                message: `Discord summary sent successfully to ${successCount}/${userResults.length} user webhooks${globalResult ? (globalResult.success ? " and global webhook" : " (global webhook failed)") : ""}`,
+                message: `Weekly summary sent. Discord: ${discordCount}, Email: ${emailCount}, Failed: ${failed.length}`,
                 stats: currentStats,
                 deltas,
-                webhooksSent: {
-                    users: {
-                        total: userResults.length,
-                        successful: successCount,
-                        failed: failureCount,
-                        results: userResults,
-                    },
-                    global: globalResult,
+                recipients: {
+                    total: recipients.length,
+                    successful: successful.length,
+                    failed: failed.length,
+                    discord: discordCount,
+                    email: emailCount,
+                    results: deliveryResults,
                 },
             },
             { status: 200 },
         );
     } catch (error) {
-        const errorMessage =
-            error instanceof Error ? error.message : String(error);
-        console.error("❌ Discord summary endpoint error:", errorMessage);
+        const errorMessage = error instanceof Error ? error.message : String(error);
 
         return NextResponse.json(
             {
