@@ -135,11 +135,11 @@ export default function Sidebar() {
         <>
             <aside className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:bg-white lg:shadow-md3-1 dark:lg:bg-[#0b0f14]">
                 <div className="p-6 lg:p-8">
-                    <h1 className="text-xl font-bold text-md-on-surface dark:text-white lg:text-2xl">
-                        Radar
+                    <h1 className="whitespace-nowrap text-lg font-bold text-md-on-surface dark:text-white lg:text-xl">
+                        Internship Radar
                     </h1>
                     <p className="mt-1 text-sm text-md-subtitle dark:text-gray-400">
-                        InternshipRadar
+                        Secure your next job.
                     </p>
                 </div>
 
