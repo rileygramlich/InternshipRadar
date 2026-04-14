@@ -27,9 +27,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { company, title, url, description, tech_tags } = body as {
+        const { company, title, location, url, description, tech_tags } = body as {
             company?: string;
             title?: string;
+            location?: string;
             url?: string;
             description?: string;
             tech_tags?: string[];
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest) {
         const job = await createJobPosting(
             company,
             title,
+            location ?? "",
             url ?? "",
             description ?? "",
             tech_tags,

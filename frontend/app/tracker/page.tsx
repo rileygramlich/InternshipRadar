@@ -8,8 +8,8 @@ export default function TrackerPage() {
                     Applications
                 </h1>
                 <p className="text-md-subtitle dark:text-gray-400 text-lg">
-                    Drag and drop applications between stages with real-time
-                    persisted status updates.
+                    Keep every application organized from saved to offer with
+                    quick stage updates.
                 </p>
             </div>
             <ApplicationKanban />

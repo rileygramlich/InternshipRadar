@@ -3,6 +3,8 @@
 
 import { createClient } from "@supabase/supabase-js";
 
+export const TRACKER_PRIVATE_MARKER = "TRACKER_PRIVATE::";
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -41,6 +43,10 @@ export async function createProfile(
     discord_webhook_url: string,
     skills: string[],
     location_preference: string,
+    experience_level: string | null = null,
+    remote_preference: boolean = true,
+    about: string = "",
+    profile_photo_url: string = "",
 ) {
     const { data, error } = await supabase
         .from("profiles")
@@ -51,6 +57,10 @@ export async function createProfile(
                 discord_webhook_url,
                 skills,
                 location_preference,
+                experience_level,
+                remote_preference,
+                about,
+                profile_photo_url,
             },
         ])
         .select();
@@ -78,6 +88,10 @@ export async function updateProfile(
         discord_webhook_url?: string;
         skills?: string[];
         location_preference?: string;
+        experience_level?: string;
+        remote_preference?: boolean;
+        about?: string;
+        profile_photo_url?: string;
     },
 ) {
     const { data, error } = await supabase
@@ -107,6 +121,7 @@ export async function deleteProfile(profileId: string) {
 export async function createJobPosting(
     company: string,
     title: string,
+    location: string,
     url: string,
     description: string,
     tech_tags?: string[],
@@ -117,6 +132,7 @@ export async function createJobPosting(
             {
                 company,
                 title,
+                location,
                 url,
                 description,
                 ...(tech_tags !== undefined ? { tech_tags } : {}),
@@ -133,7 +149,12 @@ export async function getJobPostings(
     pageSize: number = 20,
     searchQuery?: string,
 ) {
-    let query = supabase.from("job_postings").select("*", { count: "exact" });
+    let query = supabase
+        .from("job_postings")
+        .select("*", { count: "exact" })
+        .or(
+            `description.is.null,description.not.like.${TRACKER_PRIVATE_MARKER}%`,
+        );
 
     if (searchQuery) {
         query = query.or(
@@ -165,6 +186,7 @@ export async function updateJobPosting(
     updates: {
         company?: string;
         title?: string;
+        location?: string;
         url?: string;
         description?: string;
         tech_tags?: string[];

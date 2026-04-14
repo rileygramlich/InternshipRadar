@@ -9,8 +9,26 @@ type Profile = {
     discord_webhook_url: string | null;
     skills: string[];
     location_preference: string | null;
+    experience_level: string | null;
+    remote_preference: boolean | null;
+    about: string | null;
+    profile_photo_url: string | null;
     created_at: string;
 };
+
+function profileToEdits(data: Profile): EditableFields {
+    return {
+        name: data.name ?? "",
+        email: data.email ?? "",
+        discord_webhook_url: data.discord_webhook_url ?? "",
+        skills: (data.skills || []).join(", "),
+        location_preference: data.location_preference ?? "",
+        experience_level: data.experience_level ?? "",
+        remote_preference: data.remote_preference !== false,
+        about: data.about ?? "",
+        profile_photo_url: data.profile_photo_url ?? "",
+    };
+}
 
 type EditableFields = {
     name: string;
@@ -19,6 +37,9 @@ type EditableFields = {
     skills: string;
     location_preference: string;
     experience_level: string;
+    remote_preference: boolean;
+    about: string;
+    profile_photo_url: string;
 };
 
 async function parseApiResponse(res: Response) {
@@ -39,6 +60,58 @@ async function parseApiResponse(res: Response) {
     }
 }
 
+function arraysEqual(a: string[], b: string[]) {
+    return (
+        a.length === b.length && a.every((value, index) => value === b[index])
+    );
+}
+
+function buildUpdatePayload(edits: EditableFields, base: EditableFields) {
+    const payload: Record<string, unknown> = {};
+
+    if (edits.name.trim() !== base.name.trim()) {
+        payload.name = edits.name;
+    }
+
+    if (edits.discord_webhook_url !== base.discord_webhook_url) {
+        payload.discord_webhook_url = edits.discord_webhook_url;
+    }
+
+    const nextSkills = edits.skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    const baseSkills = base.skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    if (!arraysEqual(nextSkills, baseSkills)) {
+        payload.skills = nextSkills;
+    }
+
+    if (edits.location_preference !== base.location_preference) {
+        payload.location_preference = edits.location_preference;
+    }
+
+    if (edits.experience_level !== base.experience_level) {
+        payload.experience_level = edits.experience_level;
+    }
+
+    if (edits.remote_preference !== base.remote_preference) {
+        payload.remote_preference = edits.remote_preference;
+    }
+
+    if (edits.about !== base.about) {
+        payload.about = edits.about;
+    }
+
+    if (edits.profile_photo_url !== base.profile_photo_url) {
+        payload.profile_photo_url = edits.profile_photo_url;
+    }
+
+    return payload;
+}
+
 export default function ProfileManager() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(false);
@@ -47,6 +120,8 @@ export default function ProfileManager() {
     const [success, setSuccess] = useState<string | null>(null);
     const [resumeParsing, setResumeParsing] = useState(false);
     const [resumeError, setResumeError] = useState<string | null>(null);
+    const [testingSummary, setTestingSummary] = useState(false);
+    const [testError, setTestError] = useState<string | null>(null);
 
     const [edits, setEdits] = useState<EditableFields | null>(null);
 
@@ -57,7 +132,6 @@ export default function ProfileManager() {
     async function refresh() {
         setLoading(true);
         setError(null);
-        setSuccess(null);
         try {
             const res = await fetch("/api/profiles/me", { cache: "no-store" });
             const json = (await parseApiResponse(res)) as {
@@ -71,14 +145,7 @@ export default function ProfileManager() {
                 throw new Error("Profile response is missing data.");
             }
             setProfile(data);
-            setEdits({
-                name: data.name ?? "",
-                email: data.email ?? "",
-                discord_webhook_url: data.discord_webhook_url ?? "",
-                skills: (data.skills || []).join(", "),
-                location_preference: data.location_preference ?? "",
-                experience_level: "",
-            });
+            setEdits(profileToEdits(data));
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "Failed to load profile",
@@ -93,6 +160,8 @@ export default function ProfileManager() {
     async function handleResumeUpload(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        if (!profile || !edits) return;
 
         setResumeParsing(true);
         setResumeError(null);
@@ -109,25 +178,58 @@ export default function ProfileManager() {
                 skills?: string[];
                 location_preference?: string;
                 experience_level?: string;
+                remote_preference?: boolean;
+                about?: string;
             } | null;
             if (!res.ok)
                 throw new Error(json?.error || "Failed to parse resume");
 
-            setEdits((prev) =>
-                prev
-                    ? {
-                          ...prev,
-                          skills: Array.isArray(json?.skills)
-                              ? json.skills.join(", ")
-                              : prev.skills,
-                          location_preference:
-                              json?.location_preference ||
-                              prev.location_preference,
-                          experience_level:
-                              json?.experience_level || prev.experience_level,
-                      }
-                    : prev,
-            );
+            // Create updated edits with parsed data
+            const updatedEdits: EditableFields = {
+                ...edits,
+                skills: Array.isArray(json?.skills)
+                    ? json.skills.join(", ")
+                    : edits.skills,
+                location_preference:
+                    json?.location_preference || edits.location_preference,
+                experience_level:
+                    json?.experience_level || edits.experience_level,
+                remote_preference:
+                    typeof json?.remote_preference === "boolean"
+                        ? json.remote_preference
+                        : edits.remote_preference,
+                about:
+                    typeof json?.about === "string" ? json.about : edits.about,
+            };
+
+            setEdits(updatedEdits);
+
+            // Auto-save the parsed data
+            const base = profileToEdits(profile);
+            const payload = buildUpdatePayload(updatedEdits, base);
+
+            if (Object.keys(payload).length > 0) {
+                setError(null);
+                const saveRes = await fetch("/api/profiles/me", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+                const saveJson = (await parseApiResponse(saveRes)) as {
+                    error?: string;
+                    data?: Profile;
+                } | null;
+                if (!saveRes.ok)
+                    throw new Error(
+                        saveJson?.error || "Failed to save parsed resume data",
+                    );
+
+                if (saveJson?.data) {
+                    setProfile(saveJson.data);
+                    setEdits(profileToEdits(saveJson.data));
+                }
+                setSuccess("Resume data added and profile updated.");
+            }
         } catch (err) {
             setResumeError(
                 err instanceof Error ? err.message : "Failed to parse resume",
@@ -140,8 +242,18 @@ export default function ProfileManager() {
 
     async function handleUpdate() {
         const update = edits;
-        if (!update) return;
-        if (!update.name.trim()) {
+        if (!update || !profile) return;
+
+        const base = profileToEdits(profile);
+        const payload = buildUpdatePayload(update, base);
+
+        if (Object.keys(payload).length === 0) {
+            setSuccess("No changes to save.");
+            setError(null);
+            return;
+        }
+
+        if (typeof payload.name === "string" && !payload.name.trim()) {
             setError("Name is required.");
             return;
         }
@@ -153,23 +265,20 @@ export default function ProfileManager() {
             const res = await fetch("/api/profiles/me", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: update.name,
-                    discord_webhook_url: update.discord_webhook_url,
-                    skills: update.skills
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    location_preference: update.location_preference,
-                }),
+                body: JSON.stringify(payload),
             });
             const json = (await parseApiResponse(res)) as {
                 error?: string;
+                data?: Profile;
             } | null;
             if (!res.ok)
                 throw new Error(json?.error || "Failed to update profile");
+
+            if (json?.data) {
+                setProfile(json.data);
+                setEdits(profileToEdits(json.data));
+            }
             setSuccess("Profile settings updated.");
-            await refresh();
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "Failed to update profile",
@@ -179,9 +288,42 @@ export default function ProfileManager() {
         }
     }
 
+    async function handleTestDiscordSummary() {
+        setTestingSummary(true);
+        setTestError(null);
+
+        try {
+            const res = await fetch("/api/test-discord-summary", {
+                method: "POST",
+            });
+
+            const json = (await parseApiResponse(res)) as {
+                error?: string;
+                success?: boolean;
+                message?: string;
+            } | null;
+
+            if (!res.ok) {
+                throw new Error(json?.error || "Failed to send test summary");
+            }
+
+            setSuccess(
+                json?.message || "Test Discord summary sent successfully!",
+            );
+        } catch (err) {
+            setTestError(
+                err instanceof Error
+                    ? err.message
+                    : "Failed to send test summary",
+            );
+        } finally {
+            setTestingSummary(false);
+        }
+    }
+
     return (
         <div className="space-y-6">
-            <div className="rounded-2xl bg-white p-6 shadow-md3-1 dark:bg-[#0d1730]">
+            <div className="rounded-2xl bg-white p-6 shadow-md3-1 dark:bg-[#0f1115]">
                 <h2 className="text-xl font-semibold text-md-on-surface dark:text-white mb-3">
                     Import from Resume
                 </h2>
@@ -212,19 +354,10 @@ export default function ProfileManager() {
                     )}
                 </label>
             </div>
-            <div className="rounded-2xl bg-white p-6 shadow-md3-1 dark:bg-[#0d1730]">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-md-on-surface dark:text-white">
-                        Profile Settings
-                    </h2>
-                    <button
-                        onClick={refresh}
-                        className="btn-ripple text-sm text-primary dark:text-blue-400 hover:text-primary-dark dark:hover:text-blue-300 rounded-xl px-3 py-1 hover:bg-primary-light dark:hover:bg-blue-900/30 transition-colors"
-                        disabled={loading}
-                    >
-                        {loading ? "Refreshing..." : "Refresh"}
-                    </button>
-                </div>
+            <div className="rounded-2xl bg-white p-6 shadow-md3-1 dark:bg-[#0f1115]">
+                <h2 className="text-xl font-semibold text-md-on-surface dark:text-white mb-4">
+                    Profile Settings
+                </h2>
                 {error && (
                     <p className="text-sm text-red-600 dark:text-red-400 mb-3">
                         {error}
@@ -241,7 +374,7 @@ export default function ProfileManager() {
                         account profile.
                     </p>
                 ) : (
-                    <div className="p-4 rounded-2xl bg-md-surface dark:bg-[#132244]">
+                    <div className="p-4 rounded-2xl bg-md-surface dark:bg-[#171a20]">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-md-subtitle dark:text-gray-400">
@@ -265,7 +398,7 @@ export default function ProfileManager() {
                                     Name
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] dark:bg-[#171a20] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
                                     value={edits.name}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -284,7 +417,7 @@ export default function ProfileManager() {
                                     Email
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] bg-gray-100 dark:bg-[#1a2c52] shadow-sm text-sm px-3 py-2 text-md-subtitle dark:text-gray-300"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] bg-gray-100 dark:bg-[#1e232c] shadow-sm text-sm px-3 py-2 text-md-subtitle dark:text-gray-300"
                                     type="email"
                                     value={edits.email}
                                     readOnly
@@ -298,7 +431,7 @@ export default function ProfileManager() {
                                     Webhook URL
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] dark:bg-[#171a20] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
                                     value={edits.discord_webhook_url}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -318,7 +451,7 @@ export default function ProfileManager() {
                                     Skills
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] dark:bg-[#171a20] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
                                     value={edits.skills}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -337,7 +470,7 @@ export default function ProfileManager() {
                                     Location
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] dark:bg-[#171a20] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
                                     value={edits.location_preference}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -357,7 +490,7 @@ export default function ProfileManager() {
                                     Experience Level
                                 </label>
                                 <input
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] dark:bg-[#171a20] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
                                     value={edits.experience_level}
                                     onChange={(e) =>
                                         setEdits((prev) =>
@@ -373,6 +506,48 @@ export default function ProfileManager() {
                                     placeholder="e.g. Internship, Entry Level"
                                 />
                             </div>
+                            <div className="flex items-end">
+                                <label className="inline-flex items-center gap-2 text-sm font-medium text-md-on-surface dark:text-gray-300">
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        checked={edits.remote_preference}
+                                        onChange={(e) =>
+                                            setEdits((prev) =>
+                                                prev
+                                                    ? {
+                                                          ...prev,
+                                                          remote_preference:
+                                                              e.target.checked,
+                                                      }
+                                                    : prev,
+                                            )
+                                        }
+                                    />
+                                    Remote?
+                                </label>
+                            </div>
+                            <div className="md:col-span-2 lg:col-span-3">
+                                <label className="block text-sm font-medium text-md-on-surface dark:text-gray-300">
+                                    About
+                                </label>
+                                <textarea
+                                    className="mt-1 w-full rounded-2xl border border-gray-200 dark:border-[#2b313c] dark:bg-[#171a20] dark:text-gray-100 shadow-sm text-sm px-3 py-2"
+                                    rows={4}
+                                    value={edits.about}
+                                    onChange={(e) =>
+                                        setEdits((prev) =>
+                                            prev
+                                                ? {
+                                                      ...prev,
+                                                      about: e.target.value,
+                                                  }
+                                                : prev,
+                                        )
+                                    }
+                                    placeholder="Short professional summary"
+                                />
+                            </div>
                         </div>
                         <div className="mt-3 flex justify-end">
                             <button
@@ -386,6 +561,35 @@ export default function ProfileManager() {
                     </div>
                 )}
             </div>
+            {profile?.email === "rgram060@mtroyal.ca" && (
+                <div className="rounded-2xl bg-white p-6 shadow-md3-1 dark:bg-[#0f1115] border-2 border-orange-500 dark:border-orange-600">
+                    <h2 className="text-xl font-semibold text-md-on-surface dark:text-white mb-4">
+                        🧪 Test Weekly Summary
+                    </h2>
+                    <p className="text-sm text-md-subtitle dark:text-gray-400 mb-4">
+                        Send a test weekly summary. It will use Discord when a
+                        webhook is configured, otherwise it will send to your
+                        account email.
+                    </p>
+                    {testError && (
+                        <p className="text-sm text-red-600 dark:text-red-400 mb-3">
+                            {testError}
+                        </p>
+                    )}
+                    {success && (
+                        <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-3">
+                            {success}
+                        </p>
+                    )}
+                    <button
+                        onClick={handleTestDiscordSummary}
+                        disabled={testingSummary}
+                        className="btn-ripple px-5 py-2 rounded-2xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 disabled:opacity-60 transition-colors"
+                    >
+                        {testingSummary ? "Sending…" : "Send Test Summary"}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

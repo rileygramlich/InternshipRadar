@@ -47,6 +47,10 @@ export async function PUT(
             discord_webhook_url?: string;
             skills?: string[];
             location_preference?: string;
+            experience_level?: string;
+            remote_preference?: boolean;
+            about?: string;
+            profile_photo_url?: string;
         };
 
         if (!updates || Object.keys(updates).length === 0) {
@@ -59,6 +63,13 @@ export async function PUT(
 
         if (typeof updates.email === "string" && !updates.email.trim()) {
             return badRequest("email cannot be empty.");
+        }
+
+        if (
+            "remote_preference" in updates &&
+            typeof updates.remote_preference !== "boolean"
+        ) {
+            return badRequest("remote_preference must be a boolean.");
         }
 
         const { id } = await params;

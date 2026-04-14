@@ -24,7 +24,11 @@ function loginErrorRedirect(request: NextRequest, message: string) {
     return NextResponse.redirect(target);
 }
 
-async function ensureProfileForUser(email: string, fallbackName: string) {
+async function ensureProfileForUser(
+    email: string,
+    fallbackName: string,
+    avatarUrl: string,
+) {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedName = fallbackName.trim() || normalizedEmail;
 
@@ -48,6 +52,10 @@ async function ensureProfileForUser(email: string, fallbackName: string) {
                 discord_webhook_url: "",
                 skills: [],
                 location_preference: "",
+                experience_level: "",
+                remote_preference: true,
+                about: "",
+                profile_photo_url: avatarUrl,
             });
 
         if (insertError) {
@@ -57,7 +65,11 @@ async function ensureProfileForUser(email: string, fallbackName: string) {
         return;
     }
 
-    const updates: { name?: string; email?: string } = {};
+    const updates: {
+        name?: string;
+        email?: string;
+        profile_photo_url?: string;
+    } = {};
 
     if (existing.email?.toLowerCase() !== normalizedEmail) {
         updates.email = normalizedEmail;
@@ -65,6 +77,10 @@ async function ensureProfileForUser(email: string, fallbackName: string) {
 
     if (!existing.name || existing.name.trim() !== normalizedName) {
         updates.name = normalizedName;
+    }
+
+    if (avatarUrl) {
+        updates.profile_photo_url = avatarUrl;
     }
 
     if (Object.keys(updates).length === 0) {
@@ -141,12 +157,15 @@ export async function GET(request: NextRequest) {
     const metadata = (user.user_metadata ?? {}) as {
         full_name?: string;
         name?: string;
+        avatar_url?: string;
+        picture?: string;
     };
 
     const candidateName = metadata.full_name || metadata.name || email;
+    const candidateAvatar = metadata.avatar_url || metadata.picture || "";
 
     try {
-        await ensureProfileForUser(email, candidateName);
+        await ensureProfileForUser(email, candidateName, candidateAvatar);
     } catch {
         await supabase.auth.signOut();
         return loginErrorRedirect(

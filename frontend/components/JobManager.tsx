@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { SkillGapIndicator } from "@/components/SkillPill";
@@ -19,6 +19,8 @@ type JobPosting = {
     url: string | null;
     description: string | null;
     tech_tags: string[] | null;
+    location?: string | null;
+    experience_level?: string | null;
     created_at: string;
 };
 
@@ -77,6 +79,171 @@ function clearPendingApplicationSave() {
     window.sessionStorage.removeItem(pendingApplicationSaveKey);
 }
 
+function normalizeText(value: string | null | undefined) {
+    return (value ?? "").trim().toLowerCase();
+}
+
+function includesAny(haystack: string, needles: string[]) {
+    return needles.some((needle) => haystack.includes(needle));
+}
+
+function getSkillScore(jobSkills: string[] | null, profileSkills: string[]) {
+    const normalizedJobSkills = (jobSkills ?? [])
+        .map((skill) => normalizeText(skill))
+        .filter(Boolean);
+
+    if (normalizedJobSkills.length === 0) {
+        return 0;
+    }
+
+    const profileSkillSet = new Set(
+        profileSkills.map((skill) => normalizeText(skill)).filter(Boolean),
+    );
+
+    const matchedCount = normalizedJobSkills.filter((skill) =>
+        profileSkillSet.has(skill),
+    ).length;
+
+    return matchedCount / normalizedJobSkills.length;
+}
+
+function getLocationScore(job: JobPosting, profileLocationPreference: string) {
+    const preferredLocation = normalizeText(profileLocationPreference);
+    if (!preferredLocation) {
+        return 0.75;
+    }
+
+    const jobLocationText = normalizeText(
+        [job.location, job.title, job.description].filter(Boolean).join(" "),
+    );
+
+    if (!jobLocationText) {
+        return 0.65;
+    }
+
+    if (preferredLocation.includes("remote")) {
+        return includesAny(jobLocationText, ["remote", "work from home"])
+            ? 1
+            : 0;
+    }
+
+    const locationTokens = preferredLocation
+        .split(/[\s,/|-]+/)
+        .map((token) => token.trim())
+        .filter((token) => token.length >= 3);
+
+    if (jobLocationText.includes(preferredLocation)) {
+        return 1;
+    }
+
+    return locationTokens.length > 0 &&
+        includesAny(jobLocationText, locationTokens)
+        ? 1
+        : 0;
+}
+
+function applyScoreBoost(weightedScore: number) {
+    const boosted = 0.3 + weightedScore * 0.7;
+    return Math.min(1, Math.max(0, boosted));
+}
+
+function getScoreLabel(score: number) {
+    if (score >= 0.95) return "Excellent";
+    if (score >= 0.8) return "Strong";
+    if (score >= 0.65) return "Good";
+    if (score >= 0.5) return "Potential";
+    return "Low";
+}
+
+function normalizeExperienceLevel(value: string) {
+    const normalized = normalizeText(value);
+
+    if (includesAny(normalized, ["intern", "internship", "co-op", "coop"])) {
+        return "internship";
+    }
+
+    if (
+        includesAny(normalized, [
+            "entry",
+            "junior",
+            "new grad",
+            "graduate",
+            "associate",
+        ])
+    ) {
+        return "entry";
+    }
+
+    if (includesAny(normalized, ["mid", "intermediate", "ii", "2+"])) {
+        return "mid";
+    }
+
+    if (includesAny(normalized, ["senior", "lead", "staff", "principal"])) {
+        return "senior";
+    }
+
+    return normalized;
+}
+
+function getLevelScore(job: JobPosting, profileExperienceLevel: string) {
+    const preferredLevel = normalizeExperienceLevel(profileExperienceLevel);
+    if (!preferredLevel) {
+        return 0;
+    }
+
+    const jobLevelText = normalizeText(
+        [job.experience_level, job.title, job.description]
+            .filter(Boolean)
+            .join(" "),
+    );
+
+    if (!jobLevelText) {
+        return 0;
+    }
+
+    if (preferredLevel === "internship") {
+        return includesAny(jobLevelText, [
+            "intern",
+            "internship",
+            "co-op",
+            "coop",
+        ])
+            ? 1
+            : 0;
+    }
+
+    if (preferredLevel === "entry") {
+        return includesAny(jobLevelText, [
+            "entry",
+            "junior",
+            "new grad",
+            "graduate",
+            "associate",
+        ])
+            ? 1
+            : 0;
+    }
+
+    if (preferredLevel === "mid") {
+        return includesAny(jobLevelText, ["mid", "intermediate", "ii", "2+"])
+            ? 1
+            : 0;
+    }
+
+    if (preferredLevel === "senior") {
+        return includesAny(jobLevelText, [
+            "senior",
+            "lead",
+            "staff",
+            "principal",
+        ])
+            ? 1
+            : 0;
+    }
+
+    return jobLevelText.includes(preferredLevel) ? 1 : 0;
+}
+
 export default function JobManager() {
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
@@ -93,9 +260,57 @@ export default function JobManager() {
     const [addingForJobId, setAddingForJobId] = useState<string | null>(null);
     const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
     const [profileSkills, setProfileSkills] = useState<string[]>([]);
+    const [profileLocationPreference, setProfileLocationPreference] =
+        useState("");
+    const [profileExperienceLevel, setProfileExperienceLevel] = useState("");
     const [pendingSave, setPendingSave] =
         useState<PendingApplicationSave | null>(null);
+    const [expandedMatchJobId, setExpandedMatchJobId] = useState<string | null>(
+        null,
+    );
     const autoSaveAttemptedRef = useRef(false);
+
+    const getJobMatchScore = useCallback(
+        (job: JobPosting) => {
+            const locationScore = getLocationScore(
+                job,
+                profileLocationPreference,
+            );
+            const levelScore = getLevelScore(job, profileExperienceLevel);
+            const skillScore = getSkillScore(job.tech_tags, profileSkills);
+
+            return Math.round(
+                applyScoreBoost(
+                    locationScore * 0.5 + levelScore * 0.25 + skillScore * 0.25,
+                ) * 100,
+            );
+        },
+        [profileExperienceLevel, profileLocationPreference, profileSkills],
+    );
+
+    const getJobScoreBreakdown = useCallback(
+        (job: JobPosting) => {
+            const locationScore = getLocationScore(
+                job,
+                profileLocationPreference,
+            );
+            const levelScore = getLevelScore(job, profileExperienceLevel);
+            const skillScore = getSkillScore(job.tech_tags, profileSkills);
+            const weightedScore =
+                locationScore * 0.5 + levelScore * 0.25 + skillScore * 0.25;
+            const boostedScore = applyScoreBoost(weightedScore);
+
+            return {
+                locationPercent: Math.round(locationScore * 100),
+                levelPercent: Math.round(levelScore * 100),
+                skillPercent: Math.round(skillScore * 100),
+                weightedPercent: Math.round(weightedScore * 100),
+                boostedPercent: Math.round(boostedScore * 100),
+                label: getScoreLabel(boostedScore),
+            };
+        },
+        [profileExperienceLevel, profileLocationPreference, profileSkills],
+    );
 
     useEffect(() => {
         refresh();
@@ -125,7 +340,11 @@ export default function JobManager() {
         autoSaveAttemptedRef.current = true;
 
         void (async () => {
-            const saved = await saveApplication(job, pendingSave.status);
+            const saved = await saveApplication(
+                job,
+                pendingSave.status,
+                getJobMatchScore(job),
+            );
             if (saved) {
                 clearPendingApplicationSave();
                 setPendingSave(null);
@@ -133,7 +352,7 @@ export default function JobManager() {
                 autoSaveAttemptedRef.current = false;
             }
         })();
-    }, [isAuthenticated, jobs, pendingSave, profileId]);
+    }, [getJobMatchScore, isAuthenticated, jobs, pendingSave, profileId]);
 
     async function refresh() {
         setLoading(true);
@@ -163,6 +382,8 @@ export default function JobManager() {
 
             if (!loggedIn) {
                 setProfileId("");
+                setProfileLocationPreference("");
+                setProfileExperienceLevel("");
                 setJobs(jobsArray);
                 setSavedJobIds(new Set());
                 return;
@@ -182,9 +403,21 @@ export default function JobManager() {
                         ? profileJson.data.skills
                         : [],
                 );
+                setProfileLocationPreference(
+                    typeof profileJson.data?.location_preference === "string"
+                        ? profileJson.data.location_preference
+                        : "",
+                );
+                setProfileExperienceLevel(
+                    typeof profileJson.data?.experience_level === "string"
+                        ? profileJson.data.experience_level
+                        : "",
+                );
             } else {
                 setProfileId("");
                 setProfileSkills([]);
+                setProfileLocationPreference("");
+                setProfileExperienceLevel("");
             }
 
             // Fetch user's applications to filter out saved jobs
@@ -216,7 +449,11 @@ export default function JobManager() {
         }
     }
 
-    async function saveApplication(job: JobPosting, status: ApplicationStatus) {
+    async function saveApplication(
+        job: JobPosting,
+        status: ApplicationStatus,
+        matchScore: number,
+    ) {
         setError(null);
         setActionMessage(null);
 
@@ -229,7 +466,7 @@ export default function JobManager() {
                     profileId,
                     jobId: job.id,
                     status,
-                    matchScore: 0,
+                    matchScore,
                 }),
             });
 
@@ -271,12 +508,14 @@ export default function JobManager() {
             return;
         }
 
-        await saveApplication(job, quickApplyStatus);
+        await saveApplication(job, quickApplyStatus, getJobMatchScore(job));
     }
+
+    const visibleJobs = jobs.filter((job) => !savedJobIds.has(job.id));
 
     return (
         <div className="space-y-4 md:space-y-6">
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 md:p-6 dark:border-[#2d4068] dark:bg-[#0d1730]">
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 md:p-6 dark:border-[#344051] dark:bg-[#11161d]">
                 <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <h2 className="text-xl font-semibold text-md-on-surface dark:text-white md:text-2xl lg:text-3xl">
                         Jobs
@@ -312,7 +551,7 @@ export default function JobManager() {
                         Default Application Status
                     </label>
                     <select
-                        className="mt-1 min-h-[44px] w-full rounded-2xl border border-gray-200 px-3 text-sm shadow-sm dark:border-[#2d4068] dark:bg-[#132244] dark:text-gray-100 md:w-72"
+                        className="mt-1 min-h-[44px] w-full rounded-2xl border border-gray-200 px-3 text-sm shadow-sm dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100 md:w-72"
                         value={quickApplyStatus}
                         onChange={(e) =>
                             setQuickApplyStatus(
@@ -328,74 +567,157 @@ export default function JobManager() {
                     </select>
                 </div>
 
-                {jobs.length === 0 ? (
+                {loading && visibleJobs.length === 0 ? (
+                    <div className="space-y-4">
+                        {Array.from({ length: 3 }).map((_, idx) => (
+                            <div
+                                key={`job-loading-${idx}`}
+                                className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-[#344051] dark:bg-[#1b2430]"
+                            >
+                                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                    <div className="min-w-0 flex-1 space-y-2">
+                                        <div className="loading-shimmer h-5 w-40 rounded-lg" />
+                                        <div className="loading-shimmer h-4 w-56 rounded-lg" />
+                                        <div className="loading-shimmer h-4 w-24 rounded-lg" />
+                                        <div className="loading-shimmer h-3 w-36 rounded-lg" />
+                                    </div>
+                                    <div className="loading-shimmer h-10 w-24 rounded-2xl" />
+                                </div>
+                                <div className="mt-3 space-y-2">
+                                    <div className="loading-shimmer h-3 w-full rounded-lg" />
+                                    <div className="loading-shimmer h-3 w-11/12 rounded-lg" />
+                                    <div className="loading-shimmer h-3 w-3/4 rounded-lg" />
+                                </div>
+                                <div className="mt-3 flex justify-end">
+                                    <div className="loading-shimmer h-10 w-36 rounded-2xl" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : jobs.length === 0 ? (
                     <p className="text-md-subtitle dark:text-gray-400">
                         No job postings yet.
                     </p>
                 ) : (
                     <div className="space-y-4">
-                        {jobs
-                            .filter((job) => !savedJobIds.has(job.id))
-                            .map((job) => (
-                                <div
-                                    key={job.id}
-                                    className="rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-[#2d4068] dark:bg-[#132244] dark:hover:bg-[#172849]"
-                                >
-                                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                        <div className="min-w-0">
-                                            <p className="truncate text-base font-semibold text-md-on-surface dark:text-white md:text-lg">
-                                                {job.company}
-                                            </p>
-                                            <p className="line-clamp-2 text-sm text-md-subtitle dark:text-gray-300 md:text-base">
-                                                {job.title}
-                                            </p>
-                                            <p className="text-xs text-md-subtitle dark:text-gray-400 md:text-sm">
-                                                Created:{" "}
-                                                {new Date(
-                                                    job.created_at,
-                                                ).toLocaleString()}
-                                            </p>
-                                        </div>
-                                        {job.url && (
-                                            <a
-                                                href={job.url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="btn-ripple inline-flex min-h-[44px] items-center rounded-2xl px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary-light dark:text-blue-400 dark:hover:bg-blue-900/30"
-                                            >
-                                                View Job
-                                            </a>
-                                        )}
-                                    </div>
-                                    {job.description && (
-                                        <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm text-md-subtitle dark:text-gray-300">
-                                            {job.description}
-                                        </p>
-                                    )}
-                                    {Array.isArray(job.tech_tags) &&
-                                        job.tech_tags.length > 0 && (
-                                            <SkillGapIndicator
-                                                techTags={job.tech_tags}
-                                                profileSkills={profileSkills}
-                                            />
-                                        )}
-                                    <div className="mt-3 flex justify-end">
-                                        <button
-                                            onClick={() =>
-                                                handleAddToApplications(job)
-                                            }
-                                            className="btn-ripple min-h-[44px] rounded-2xl bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
-                                            disabled={addingForJobId === job.id}
-                                        >
-                                            {addingForJobId === job.id
-                                                ? "Adding..."
-                                                : "Save Application"}
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        {jobs.filter((job) => !savedJobIds.has(job.id))
-                            .length === 0 && (
+                        {visibleJobs.map((job) => (
+                            <div
+                                key={job.id}
+                                className="rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-[#344051] dark:bg-[#1b2430] dark:hover:bg-[#202938]"
+                            >
+                                {(() => {
+                                    const score = getJobMatchScore(job);
+                                    const details = getJobScoreBreakdown(job);
+                                    const isExpanded =
+                                        expandedMatchJobId === job.id;
+
+                                    return (
+                                        <>
+                                            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-base font-semibold text-md-on-surface dark:text-white md:text-lg">
+                                                        {job.company}
+                                                    </p>
+                                                    <p className="line-clamp-2 text-sm text-md-subtitle dark:text-gray-300 md:text-base">
+                                                        {job.title}
+                                                    </p>
+                                                    {job.location && (
+                                                        <p className="text-xs font-medium text-primary dark:text-blue-300 md:text-sm">
+                                                            {job.location}
+                                                        </p>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setExpandedMatchJobId(
+                                                                isExpanded
+                                                                    ? null
+                                                                    : job.id,
+                                                            )
+                                                        }
+                                                        className="mt-1 inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-primary-light dark:text-blue-300 dark:hover:bg-blue-900/30 md:text-sm"
+                                                    >
+                                                        Match: {score}% (
+                                                        {details.label})
+                                                    </button>
+                                                </div>
+                                                {job.url && (
+                                                    <a
+                                                        href={job.url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="btn-ripple inline-flex min-h-[44px] items-center rounded-2xl px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary-light dark:text-blue-400 dark:hover:bg-blue-900/30"
+                                                    >
+                                                        View Job
+                                                    </a>
+                                                )}
+                                            </div>
+                                            {isExpanded && (
+                                                <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-md-subtitle dark:border-[#344051] dark:bg-[#11161d] dark:text-gray-300">
+                                                    <p>
+                                                        Score uses 50% location,
+                                                        25% level, and 25%
+                                                        skills.
+                                                    </p>
+                                                    <p className="mt-1">
+                                                        Location{" "}
+                                                        {
+                                                            details.locationPercent
+                                                        }
+                                                        % , Level{" "}
+                                                        {details.levelPercent}%,
+                                                        Skills{" "}
+                                                        {details.skillPercent}%.
+                                                    </p>
+                                                    <p className="mt-1">
+                                                        Weighted{" "}
+                                                        {
+                                                            details.weightedPercent
+                                                        }
+                                                        % , then boosted to{" "}
+                                                        {details.boostedPercent}
+                                                        %.
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {job.description && (
+                                                <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm text-md-subtitle dark:text-gray-300">
+                                                    {job.description}
+                                                </p>
+                                            )}
+                                            {Array.isArray(job.tech_tags) &&
+                                                job.tech_tags.length > 0 && (
+                                                    <SkillGapIndicator
+                                                        techTags={job.tech_tags}
+                                                        profileSkills={
+                                                            profileSkills
+                                                        }
+                                                    />
+                                                )}
+                                            <div className="mt-3 flex justify-end">
+                                                <button
+                                                    onClick={() =>
+                                                        handleAddToApplications(
+                                                            job,
+                                                        )
+                                                    }
+                                                    className="btn-ripple min-h-[44px] rounded-2xl bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                                                    disabled={
+                                                        addingForJobId ===
+                                                        job.id
+                                                    }
+                                                >
+                                                    {addingForJobId === job.id
+                                                        ? "Adding..."
+                                                        : "Save Application"}
+                                                </button>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        ))}
+                        {visibleJobs.length === 0 && (
                             <p className="text-md-subtitle dark:text-gray-400">
                                 You have already saved all available job
                                 postings.

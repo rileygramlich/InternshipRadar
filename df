@@ -1,0 +1,547 @@
+[33mcommit bbed241e2821a129928b807554cfd0072b804926[m[33m ([m[1;36mHEAD -> [m[1;32mmvp[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 15:12:11 2026 -0600
+
+    implmenent add other job with link parsing
+
+[33mcommit 41919645e368d360d2a1aae7775df3aff149a003[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 14:59:15 2026 -0600
+
+    fix dark mode
+
+[33mcommit ed3849ea09c63a7d5aabfb945b1b88ba6acafe33[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 14:47:49 2026 -0600
+
+    fix profile update save button
+
+[33mcommit a13f3b13feb93ef3c077e6993ab56ec32f04b433[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 14:35:46 2026 -0600
+
+    add shimmer on load animation
+
+[33mcommit 32e1d9215cd283fc153d10c71a540c9b83c7d8eb[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 14:29:20 2026 -0600
+
+    add profile photo and adjust profile schema
+
+[33mcommit 0c45f8a1f100aed8598e91806f935173673d41a9[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 14:21:38 2026 -0600
+
+    add favicon
+
+[33mcommit 0679231382c95ec70ce8c02191a8fb59d11ba6fb[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m
+Merge: 9a830b2 9fec737
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 13:53:43 2026 -0600
+
+    Merge pull request #38 from rileygramlich/copilot/issue-36
+    
+    Copilot/issue 36
+
+[33mcommit 9fec7374ecff577ae37e706f2a39d14d04c23b52[m[33m ([m[1;31morigin/copilot/issue-36[m[33m, [m[1;32mcopilot/issue-36[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 13:51:17 2026 -0600
+
+    fix analytics bar styling
+
+[33mcommit 4fe3c0145c0de1060cbc1f9f37ef5aa5354fbaa4[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 13:44:53 2026 -0600
+
+    fix rejection rate and application rate
+
+[33mcommit e8eba59b0b31f2967f951b7b361671f114653957[m
+Merge: e707aca 9a830b2
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 13:41:38 2026 -0600
+
+    merge
+
+[33mcommit e707aca2fb0d2126bb1fae0362bdb3be818f0365[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 13:37:14 2026 -0600
+
+    styling refresh
+
+[33mcommit 9a830b2e1c81f87bca764388b64a010ea56306fa[m[33m ([m[1;32mstyle[m[33m)[m
+Merge: e28d299 2375ad7
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 13:05:10 2026 -0600
+
+    Merge pull request #37 from rileygramlich/copilot/issue-35-work
+    
+    Copilot/issue 35 work
+
+[33mcommit 2375ad759d9efdca8bbda2427ed780bc9cb370c4[m[33m ([m[1;31morigin/copilot/issue-35-work[m[33m, [m[1;32mcopilot/issue-35-work[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 13 13:03:46 2026 -0600
+
+    update match score based on skills
+
+[33mcommit 8442014481bf5ef21f92f06d65842e9c28af8a4f[m
+Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Date:   Mon Apr 13 18:53:14 2026 +0000
+
+    fix: restore kanban column accent indicators and remove duplicate bg color
+    
+    Agent-Logs-Url: https://github.com/rileygramlich/InternshipRadar/sessions/3ed95a94-9033-4364-b07f-f50c7b393239
+    
+    Co-authored-by: rileygramlich <101842921+rileygramlich@users.noreply.github.com>
+
+[33mcommit c7b3c2142528c1208a8ed6318b2404625a33b96a[m
+Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Date:   Mon Apr 13 18:51:09 2026 +0000
+
+    feat: apply Material Design 3 visual redesign (issue #36)
+    
+    Agent-Logs-Url: https://github.com/rileygramlich/InternshipRadar/sessions/3ed95a94-9033-4364-b07f-f50c7b393239
+    
+    Co-authored-by: rileygramlich <101842921+rileygramlich@users.noreply.github.com>
+
+[33mcommit f2f3728b3f75bdd7aa13432166b5bbe14f4d187a[m
+Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Date:   Mon Apr 13 17:24:11 2026 +0000
+
+    feat: job filtering, sorting, and match score visualization (issue #35)
+    
+    Agent-Logs-Url: https://github.com/rileygramlich/InternshipRadar/sessions/985b2d2b-9a51-4da1-9b4f-82134c5eb844
+    
+    Co-authored-by: rileygramlich <101842921+rileygramlich@users.noreply.github.com>
+
+[33mcommit e28d29924dd8397d0bebbbf0257ee161a445b7d4[m[33m ([m[1;32mmatch_score[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Tue Apr 7 23:40:01 2026 -0600
+
+    fix bug showing logout when not logged in
+
+[33mcommit 0052b7d2f23aeb87452f016abdad517029217aec[m
+Merge: 65eacd8 d36085f
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Tue Apr 7 23:36:54 2026 -0600
+
+    Merge branch 'main' of https://github.com/rileygramlich/InternshipRadar
+
+[33mcommit 65eacd8ce08fcc8f79949b48837b259aff4f4577[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Tue Apr 7 23:34:29 2026 -0600
+
+    fix middleware
+
+[33mcommit d36085fe3bb8a7fc77e02451ff2cdcedde77cc5e[m[33m ([m[1;31morigin/mobile[m[33m, [m[1;32mmobile[m[33m)[m
+Author: kbaig601 <113457561+kbaig601@users.noreply.github.com>
+Date:   Tue Apr 7 21:19:16 2026 -0600
+
+    Create lighthouse.yml
+
+[33mcommit 4325546c2df7fb0c29d0090c991d709d5f759980[m
+Author: kbaig601 <113457561+kbaig601@users.noreply.github.com>
+Date:   Tue Apr 7 21:16:25 2026 -0600
+
+    Create .lighthouserc.js
+
+[33mcommit d1c772cdd3b79f13187461e3e65c0d2ae564f966[m
+Merge: 276ae9d bdd3376
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 6 15:52:42 2026 -0600
+
+    Merge pull request #33 from rileygramlich/mobile
+    
+    add mobile optimized styling
+
+[33mcommit bdd3376d3c48b74fb917e5b20213ec76e8d5f537[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 6 12:39:22 2026 -0600
+
+    add mobile optimized styling
+
+[33mcommit 276ae9db3ca26b3c49499afdba042d4fc2f002bb[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 6 10:32:00 2026 -0600
+
+    remove issues docs
+
+[33mcommit ad3ea129aced96abf0d08b73b512ff52ee332014[m
+Merge: aef86b0 04f31cb
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Apr 6 10:30:09 2026 -0600
+
+    Merge branch 'main' of https://github.com/rileygramlich/InternshipRadar
+
+[33mcommit 04f31cba5c9af81f07b6bef24ad695a20c52e7d1[m
+Merge: 8528cd3 c80c57e
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Fri Apr 3 13:52:49 2026 -0600
+
+    Merge pull request #29 from rileygramlich/copilot/issue-22
+    
+    feat: Visual skill gap indicators on job cards
+
+[33mcommit c80c57ef1546c108dfd87d8b2abcae2dc361a24d[m[33m ([m[1;31morigin/copilot/issue-22[m[33m, [m[1;32mcopilot/issue-22[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Fri Apr 3 13:51:56 2026 -0600
+
+    add skills listed in job postings and skill gap feature
+
+[33mcommit 531580d90b7206c0bd46d285b48b45f230f1e75b[m
+Merge: 7791983 8528cd3
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Fri Apr 3 13:32:18 2026 -0600
+
+    Merge branch 'main' of https://github.com/rileygramlich/InternshipRadar into copilot/issue-22
+
+[33mcommit aef86b065aa82013bcb9d8831f6c89b6aaa4681f[m
+Merge: 6b041ff 8528cd3
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Fri Apr 3 13:30:32 2026 -0600
+
+    Merge branch 'main' of https://github.com/rileygramlich/InternshipRadar
+
+[33mcommit 8528cd34aed25a0e8ab31f3c8ffe63f2f1af3dc6[m
+Merge: fa9b10f bf07fc5
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Fri Apr 3 13:30:08 2026 -0600
+
+    Merge pull request #28 from rileygramlich/copilot/update-issue-23-details
+    
+    feat: Kanban analytics overlay for Tracker page
+
+[33mcommit bf07fc59d92770e400b3e4fd3005c1e8820c7711[m[33m ([m[1;31morigin/copilot/update-issue-23-details[m[33m, [m[1;32mcopilot/update-issue-23-details[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Fri Apr 3 13:29:32 2026 -0600
+
+    add rejection rate
+
+[33mcommit 97e997b87a43d81d040a0c4aa1b123ef2552592b[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Fri Apr 3 13:27:38 2026 -0600
+
+    add dark styling to tracker
+
+[33mcommit 3935bce3fd6580cbdb05e7d034a01096bf715925[m
+Merge: e2d6007 fa9b10f
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Fri Apr 3 13:17:33 2026 -0600
+
+    Merge branch 'main' of https://github.com/rileygramlich/InternshipRadar into copilot/update-issue-23-details
+
+[33mcommit 6b041ff1d3ff8976871c7307586fb2301b536e01[m
+Merge: 37652a5 fa9b10f
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Fri Apr 3 13:09:43 2026 -0600
+
+    Merge branch 'main' of https://github.com/rileygramlich/InternshipRadar
+
+[33mcommit fa9b10f9b4d4ff76ef91e836eb8af7a5de4327e8[m
+Merge: d55865a 5ebd76c
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Fri Apr 3 13:08:42 2026 -0600
+
+    Merge pull request #27 from rileygramlich/copilot/add-dark-mode-support
+    
+    Add dark mode support via next-themes and Tailwind dark: classes
+
+[33mcommit 5ebd76cd6a828f49e254c292818b075078348334[m[33m ([m[1;31morigin/copilot/add-dark-mode-support[m[33m, [m[1;32mcopilot/add-dark-mode-support[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Fri Apr 3 13:07:33 2026 -0600
+
+    add dark styling to signup/login
+
+[33mcommit 779198387fbbbce5fc7ba2134816b6ee8429fada[m
+Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Date:   Fri Apr 3 00:46:34 2026 +0000
+
+    feat: visual skill gap indicators on job cards (issue #22)
+    
+    Agent-Logs-Url: https://github.com/rileygramlich/InternshipRadar/sessions/5db07030-759f-4fab-925b-76b29ad57522
+    
+    Co-authored-by: rileygramlich <101842921+rileygramlich@users.noreply.github.com>
+
+[33mcommit b686a36157b21a1c030a60573d64d6ef979a12ce[m
+Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Date:   Fri Apr 3 00:40:12 2026 +0000
+
+    Initial plan
+
+[33mcommit ac9732207c9ee20175af9e92fb8d83bec3985c76[m
+Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Date:   Fri Apr 3 00:36:38 2026 +0000
+
+    feat: add dark mode support using next-themes and Tailwind dark: classes
+    
+    Agent-Logs-Url: https://github.com/rileygramlich/InternshipRadar/sessions/20e8a8bb-a90b-456b-b971-d57850b4c2cb
+    
+    Co-authored-by: rileygramlich <101842921+rileygramlich@users.noreply.github.com>
+
+[33mcommit e2d6007f1bec45128eedf174ac56eb011aad1bd3[m
+Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Date:   Fri Apr 3 00:34:41 2026 +0000
+
+    feat: add Kanban analytics overlay (#23)
+    
+    Agent-Logs-Url: https://github.com/rileygramlich/InternshipRadar/sessions/8cddde37-8e19-441a-8e8e-e6ecf61aa067
+    
+    Co-authored-by: rileygramlich <101842921+rileygramlich@users.noreply.github.com>
+
+[33mcommit ba28c4a91dfc783d558e7b505b103d9875781c1e[m
+Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Date:   Fri Apr 3 00:31:26 2026 +0000
+
+    Initial plan
+
+[33mcommit f8422ac8eaeeaa1c7181d2adad21854391f563eb[m
+Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Date:   Fri Apr 3 00:27:31 2026 +0000
+
+    Initial plan
+
+[33mcommit d55865a5c6a8566232d502d0461517e4c8a6014d[m
+Merge: 6d5aa02 c166bc9
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 22:04:31 2026 -0600
+
+    Merge pull request #17 from rileygramlich/copilot/add-resume-upload-feature
+    
+    Add PDF resume upload with OpenAI-powered profile auto-fill
+
+[33mcommit 37652a5ce4e90f740f3aef95d58a8e82d8143270[m
+Merge: c166bc9 6d5aa02
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 20:37:24 2026 -0600
+
+    Merge branch 'main' of https://github.com/rileygramlich/InternshipRadar
+
+[33mcommit c166bc98ad80366a843563a51e765f7d8bc7fcbe[m[33m ([m[1;31morigin/copilot/add-resume-upload-feature[m[33m, [m[1;32mcopilot/add-resume-upload-feature[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 20:21:53 2026 -0600
+
+    implement resume PDF parser
+
+[33mcommit 53b1e03d79499cf1e567cb1f8e9072a452c69b38[m
+Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Date:   Wed Apr 1 08:35:41 2026 +0000
+
+    Add PDF resume upload with OpenAI-powered profile auto-fill
+    
+    Agent-Logs-Url: https://github.com/rileygramlich/InternshipRadar/sessions/7d68a960-7972-4286-a26e-d832c0273c5e
+    
+    Co-authored-by: rileygramlich <101842921+rileygramlich@users.noreply.github.com>
+
+[33mcommit 6d5aa020c467085f2f4a6c6332f695f40dff3485[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 02:34:45 2026 -0600
+
+    Update create-enhancement-issues.yml
+
+[33mcommit ac5a37122560a5c679d93e0f6a1cad60026a457b[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 02:32:33 2026 -0600
+
+    Create .github/workflows/create-enhancement-issues.yml
+
+[33mcommit 1551012a4a58ae1834a6c0bc0f8dfe0e8c0e2c7b[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 02:29:36 2026 -0600
+
+    Update enhancement and polish JSON data
+
+[33mcommit 5cee2c627331cb960b72283df185d721cd5ed3db[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 02:26:18 2026 -0600
+
+    Create Node.js script for issue management
+
+[33mcommit 2454a82b1bf0b23f1b9d9b89b0fccca1e3a90a58[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 02:24:30 2026 -0600
+
+    Add workflow + script to create Enhancement & Polish issues
+
+[33mcommit 74c06d391360138032e11f54b7e74d8af6a3c1fa[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 02:23:35 2026 -0600
+
+    Create issues/enhancement-and-polish.json
+
+[33mcommit 93698868c140c8916a5d6c1eb5bb8a04d6823aaf[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 02:18:32 2026 -0600
+
+    Add issue batch spec and GitHub Action to create enhancement issues
+
+[33mcommit a2f09afae323f6129f00412a03b12fe86bd620f3[m
+Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Date:   Wed Apr 1 07:37:57 2026 +0000
+
+    Initial plan
+
+[33mcommit 083c10d8e552c5ad73234e82eb93b6dfee03a42d[m[33m ([m[1;31morigin/pdf[m[33m, [m[1;32mpdf[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 01:12:28 2026 -0600
+
+    Update repository URL in README
+
+[33mcommit ae2498a26ef79e1070e04b5198258c73684ae3ac[m
+Merge: 398cf82 4bd5ef2
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 01:06:42 2026 -0600
+
+    Merge pull request #15 from rileygramlich/board
+    
+    Board
+
+[33mcommit 4bd5ef2232895e4e466aba4f72ce703d45eb9c21[m[33m ([m[1;31morigin/board[m[33m, [m[1;32mboard[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Apr 1 00:55:51 2026 -0600
+
+    add login with Google
+
+[33mcommit d7f45175977188ff5820f73d0993697764aa0643[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Tue Mar 31 11:23:55 2026 -0600
+
+    improve delete function
+
+[33mcommit e8b05d22eac1cd803a35d1c2a3a9d33ecf33e629[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Tue Mar 31 11:06:50 2026 -0600
+
+    implment delete application
+
+[33mcommit 398cf82679f83e114129062454b37501944fa035[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 20:35:31 2026 -0600
+
+    fix signup
+
+[33mcommit 5b7ff84313778af93a31d251c589310680be0fe9[m
+Merge: 27a57f5 ea047f9
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 20:37:22 2026 -0600
+
+    Merge pull request #14 from rileygramlich/auto-data
+    
+    Auto data
+
+[33mcommit ea047f9cf5f3ed923ab53bdfd2c9f7d5d6fc731a[m[33m ([m[1;31morigin/auto-data[m[33m, [m[1;32mauto-data[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 20:06:12 2026 -0600
+
+    adjust profile settings page
+
+[33mcommit 86b41c5ae75989e8ed479089a9ca3ef121ee99d8[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 19:46:24 2026 -0600
+
+    seeded data and removed job creation widget
+
+[33mcommit c4dc1fd52af21b175ea5432a02aa4031c7112352[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 18:38:01 2026 -0600
+
+    add login redirect
+
+[33mcommit dacefd5d75c9f9f343a0ed2742cf3be7f9715198[m[33m ([m[1;31morigin/logout[m[33m, [m[1;32mlogout[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 18:25:30 2026 -0600
+
+    add logout / switch user feature
+
+[33mcommit e8f31892a2e363dba53a2d1923d00cadbf8fa175[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 18:24:20 2026 -0600
+
+    add logout / switch user feature
+
+[33mcommit 27a57f5799c25f7a0ae306e2df7582475936d07e[m
+Merge: 6fc25df 89e4d1f
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 18:00:50 2026 -0600
+
+    Merge pull request #12 from rileygramlich/supa
+    
+    update README.md with getting started section
+
+[33mcommit ca0cf94a4324b33e68b6a0aae89c0e0e32433b27[m
+Merge: c2de170 6fc25df
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 18:00:00 2026 -0600
+
+    Merge branch 'main' of https://github.com/rileygramlich/InternshipRadar
+
+[33mcommit c2de17052ee28e453fd679c8125f26aa6ebc8bc0[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 17:59:20 2026 -0600
+
+    update README.md with getting started for development purposes
+
+[33mcommit 02b9e9c0a1b4990910b535183c3f5e0f5ca780e9[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 17:57:58 2026 -0600
+
+    consolodate .gitignore
+
+[33mcommit 6fc25df0219d6bff97fde1680949a3d3e8f51194[m
+Merge: f96cbfa 2817546
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 17:22:05 2026 -0600
+
+    Merge pull request #11 from rileygramlich/issue-3
+    
+    add supabase user authentication
+
+[33mcommit 89e4d1f69c5d9e9958257006482fb001d1665b59[m[33m ([m[1;31morigin/supa[m[33m, [m[1;32msupa[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 16:53:36 2026 -0600
+
+    update README.md with getting started section
+
+[33mcommit f96cbfaaf00b7e8423dca060255f03ccde803ded[m
+Merge: ef8c99a fba5a3f
+Author: Abdul M <85636996+Exotiv-1@users.noreply.github.com>
+Date:   Mon Mar 30 15:10:25 2026 -0600
+
+    Merge pull request #9 from rileygramlich/issue-2
+
+[33mcommit 2817546b396c49e2110625b5229d5e863214a53e[m[33m ([m[1;31morigin/issue-3[m[33m, [m[1;32missue-3[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 14:25:43 2026 -0600
+
+    add supabase user authentication
+
+[33mcommit fba5a3f6abf9013566c605f4eced62984baed073[m[33m ([m[1;31morigin/issue-2[m[33m, [m[1;32missue-2[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 13:49:47 2026 -0600
+
+    connect Supabase database to frontend UI with full CRUD abilities
+
+[33mcommit 464244cdab70863ff7fc08fce77cc679a424f93b[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 12:08:55 2026 -0600
+
+    initialize supabase database
+
+[33mcommit ef8c99a5ff495e23b93a55f6655433becc583177[m
+Merge: 9fc2ad6 c2b44ee
+Author: Abdul M <85636996+Exotiv-1@users.noreply.github.com>
+Date:   Mon Mar 30 11:51:49 2026 -0600
+
+    Merge pull request #7 from rileygramlich/issue-1
+    
+    setup Next.js app and frontend interface
+
+[33mcommit c2b44eeb61c276c0d3c4e0e2ca972f266f42f25f[m[33m ([m[1;31morigin/issue-1[m[33m, [m[1;32missue-1[m[33m)[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Mon Mar 30 11:43:11 2026 -0600
+
+    setup Next.js app and frontend interface
+
+[33mcommit 9fc2ad678ef1ae38cad1faca0e48332ce376f60f[m
+Author: Riley Gramlich <101842921+rileygramlich@users.noreply.github.com>
+Date:   Wed Mar 25 14:44:35 2026 -0600
+
+    init with README.md

@@ -8,8 +8,8 @@ export default function RadarPage() {
                     Discovery
                 </h1>
                 <p className="text-md-subtitle dark:text-gray-400 text-lg">
-                    Create and manage job postings via Supabase-backed
-                    controllers.
+                    Explore curated opportunities and save the ones worth
+                    applying to.
                 </p>
             </div>
             <JobManager />
