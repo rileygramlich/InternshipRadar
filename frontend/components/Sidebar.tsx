@@ -108,21 +108,8 @@ export default function Sidebar() {
         }
     }
 
-    async function handleSwitchUser() {
-        if (!isLoggedIn) {
-            return;
-        }
-
-        try {
-            setAuthLoading(true);
-            await supabase.auth.signOut();
-            setUserEmail(null);
-            setUserName(null);
-            setUserAvatarUrl(null);
-            router.push("/login");
-        } finally {
-            setAuthLoading(false);
-        }
+    function handleLogin() {
+        router.push(`/login?redirect=${encodeURIComponent(pathname || "/radar")}`);
     }
 
     const navItems = [
@@ -217,21 +204,23 @@ export default function Sidebar() {
                                 </button>
                             </div>
                         )}
-                        {isLoggedIn && (
-                            <div className="mt-3 grid grid-cols-2 gap-2">
-                                <button
-                                    onClick={handleSwitchUser}
-                                    className="btn-ripple min-h-[44px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-md-on-surface hover:bg-md-surface disabled:opacity-60 dark:border-[#344051] dark:bg-[#202938] dark:text-gray-100 dark:hover:bg-[#2b3542]"
-                                    disabled={authLoading}
-                                >
-                                    Switch user
-                                </button>
+                        {isLoggedIn ? (
+                            <div className="mt-3">
                                 <button
                                     onClick={handleLogout}
                                     className="btn-ripple min-h-[44px] w-full rounded-xl bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-60"
                                     disabled={authLoading}
                                 >
                                     Log out
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="mt-3">
+                                <button
+                                    onClick={handleLogin}
+                                    className="btn-ripple min-h-[44px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-md-on-surface hover:bg-md-surface dark:border-[#344051] dark:bg-[#202938] dark:text-gray-100 dark:hover:bg-[#2b3542]"
+                                >
+                                    Log in
                                 </button>
                             </div>
                         )}

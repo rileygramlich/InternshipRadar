@@ -275,6 +275,8 @@ export default function ApplicationKanban() {
         useState("");
     const [profileExperienceLevel, setProfileExperienceLevel] = useState("");
     const [profileRemoteOnly, setProfileRemoteOnly] = useState(false);
+    const [profileId, setProfileId] = useState<string | null>(null);
+    const [showAddHint, setShowAddHint] = useState(false);
 
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [updatingIds, setUpdatingIds] = useState<Record<string, boolean>>({});
@@ -293,6 +295,20 @@ export default function ApplicationKanban() {
         description: "",
         tech_tags: "",
     });
+
+    const dismissAddHint = useCallback((currentProfileId?: string | null) => {
+        const hintProfileId = currentProfileId ?? profileId;
+        if (!hintProfileId || typeof window === "undefined") {
+            setShowAddHint(false);
+            return;
+        }
+
+        window.localStorage.setItem(
+            `internshipRadar.manualAddHintDismissed.${hintProfileId}`,
+            "1",
+        );
+        setShowAddHint(false);
+    }, [profileId]);
 
     const refresh = useCallback(async () => {
         setLoading(true);
@@ -317,6 +333,11 @@ export default function ApplicationKanban() {
                 const profileJson = await profileRes.json().catch(() => ({}));
 
                 if (profileRes.ok && profileJson.data?.skills) {
+                    const nextProfileId =
+                        typeof profileJson.data.id === "string"
+                            ? profileJson.data.id
+                            : null;
+                    setProfileId(nextProfileId);
                     setProfileSkills(
                         Array.isArray(profileJson.data.skills)
                             ? profileJson.data.skills
@@ -335,17 +356,31 @@ export default function ApplicationKanban() {
                     setProfileRemoteOnly(
                         profileJson.data.remote_preference !== false,
                     );
+
+                    if (nextProfileId && typeof window !== "undefined") {
+                        const seenHint =
+                            window.localStorage.getItem(
+                                `internshipRadar.manualAddHintDismissed.${nextProfileId}`,
+                            ) === "1";
+                        setShowAddHint(!seenHint);
+                    } else {
+                        setShowAddHint(false);
+                    }
                 } else {
+                    setProfileId(null);
                     setProfileSkills([]);
                     setProfileLocationPreference("");
                     setProfileExperienceLevel("");
                     setProfileRemoteOnly(false);
+                    setShowAddHint(false);
                 }
             } catch {
+                setProfileId(null);
                 setProfileSkills([]);
                 setProfileLocationPreference("");
                 setProfileExperienceLevel("");
                 setProfileRemoteOnly(false);
+                setShowAddHint(false);
             }
         } catch (err) {
             setError(
@@ -821,17 +856,37 @@ export default function ApplicationKanban() {
                                   </div>
                                   <div className="flex items-center gap-2">
                                       {column.key === "applied" && (
-                                          <button
-                                              type="button"
-                                              onClick={() => {
-                                                  setError(null);
-                                                  setShowAddModal(true);
-                                              }}
-                                              className="btn-ripple inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-base font-semibold text-md-on-surface hover:bg-gray-100 dark:border-[#344051] dark:bg-[#1b2430] dark:text-white dark:hover:bg-[#202938]"
-                                              aria-label="Add your own application"
-                                          >
-                                              +
-                                          </button>
+                                          <div className="relative">
+                                              {showAddHint && (
+                                                  <div className="absolute right-0 top-10 z-20 w-56 rounded-xl border border-gray-200 bg-white p-3 shadow-md3-2 dark:border-[#344051] dark:bg-[#11161d]">
+                                                      <button
+                                                          type="button"
+                                                          onClick={() =>
+                                                              dismissAddHint()
+                                                          }
+                                                          aria-label="Dismiss hint"
+                                                          className="absolute right-2 top-2 rounded-md px-1 text-xs text-md-subtitle hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#1b2430]"
+                                                      >
+                                                          x
+                                                      </button>
+                                                      <p className="pr-4 text-xs text-md-on-surface dark:text-gray-200">
+                                                          Add your own applications here.
+                                                      </p>
+                                                  </div>
+                                              )}
+                                              <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                      setError(null);
+                                                      setShowAddModal(true);
+                                                      dismissAddHint();
+                                                  }}
+                                                  className="btn-ripple inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-base font-semibold text-md-on-surface hover:bg-gray-100 dark:border-[#344051] dark:bg-[#1b2430] dark:text-white dark:hover:bg-[#202938]"
+                                                  aria-label="Add your own application"
+                                              >
+                                                  +
+                                              </button>
+                                          </div>
                                       )}
                                       <span className="rounded-full bg-white px-2 py-0.5 text-xs text-md-subtitle shadow-sm dark:bg-gray-700 dark:text-gray-300">
                                           {column.items.length}
