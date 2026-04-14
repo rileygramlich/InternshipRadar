@@ -22,7 +22,7 @@ function getSupabaseClient() {
 }
 
 // ============================================================================
-// GET CURRENT USER FROM SESSION COOKIES
+// GET CURRENT USER FROM SESSION COOKIES (AUTHENTICATED)
 // ============================================================================
 async function getCurrentUser(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -33,6 +33,7 @@ async function getCurrentUser(request: NextRequest) {
         throw new Error("Missing Supabase configuration");
     }
 
+    // Create a temporary client to read the session and extract the token
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
         cookies: {
             getAll() {
@@ -48,7 +49,17 @@ async function getCurrentUser(request: NextRequest) {
         data: { session },
     } = await supabase.auth.getSession();
 
-    return session?.user ?? null;
+    if (!session?.access_token) {
+        return null;
+    }
+
+    // Use getUser() to authenticate the token against Supabase Auth server
+    const serviceSupabase = getSupabaseClient();
+    const {
+        data: { user },
+    } = await serviceSupabase.auth.getUser(session.access_token);
+
+    return user ?? null;
 }
 
 // ============================================================================
@@ -62,16 +73,28 @@ interface JobStats {
     timestamp: Date;
 }
 
+type ApplicationStatus =
+    | "saved"
+    | "applied"
+    | "interview"
+    | "offer"
+    | "rejected";
+
+interface ProfileApplicationStats {
+    applicationsThisWeek: number;
+    applicationsByStatusThisWeek: Record<ApplicationStatus, number>;
+}
+
 function isCalgaryJob(location: string | null | undefined): boolean {
     return Boolean(location?.toLowerCase().includes("calgary"));
 }
 
 async function fetchCurrentStats(supabase: any): Promise<JobStats> {
+    // Fetch from job_postings - query available columns
     const { data: allJobs, error: allJobsError } = (await supabase
         .from("job_postings")
-        .select("term, location")
-        .eq("is_active", true)) as {
-        data: Array<{ term: string; location: string | null }> | null;
+        .select("location, created_at")) as {
+        data: Array<{ location: string | null; created_at: string }> | null;
         error: any;
     };
 
@@ -82,29 +105,15 @@ async function fetchCurrentStats(supabase: any): Promise<JobStats> {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const { data: newJobs, error: newJobsError } = (await supabase
-        .from("job_postings")
-        .select("id")
-        .eq("is_active", true)
-        .gte("created_at", sevenDaysAgo.toISOString())) as {
-        data: Array<{ id: string }> | null;
-        error: any;
-    };
-
-    if (newJobsError) {
-        throw new Error(`Failed to fetch new jobs: ${newJobsError.message}`);
-    }
-
     const totalJobs = allJobs?.length ?? 0;
-    const newJobsThisWeek = newJobs?.length ?? 0;
+    const newJobsThisWeek =
+        allJobs?.filter((job) => new Date(job.created_at) >= sevenDaysAgo)
+            .length ?? 0;
     const calgaryJobs =
         allJobs?.filter((job) => isCalgaryJob(job.location)).length ?? 0;
 
+    // jobsByTerm simulated as empty since term column doesn't exist
     const jobsByTerm: Record<string, number> = {};
-    allJobs?.forEach((job) => {
-        const term = job.term || "Unknown";
-        jobsByTerm[term] = (jobsByTerm[term] ?? 0) + 1;
-    });
 
     return {
         totalJobs,
@@ -150,6 +159,99 @@ async function getLastWeekStats(supabase: any): Promise<JobStats | null> {
     };
 }
 
+function getEmptyStatusCounts(): Record<ApplicationStatus, number> {
+    return {
+        saved: 0,
+        applied: 0,
+        interview: 0,
+        offer: 0,
+        rejected: 0,
+    };
+}
+
+function isValidApplicationStatus(status: string): status is ApplicationStatus {
+    return (
+        status === "saved" ||
+        status === "applied" ||
+        status === "interview" ||
+        status === "offer" ||
+        status === "rejected"
+    );
+}
+
+async function fetchProfileApplicationStats(
+    supabase: any,
+    profileId: string,
+): Promise<{
+    current: ProfileApplicationStats;
+    previous: ProfileApplicationStats;
+}> {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const fourteenDaysAgo = new Date(now);
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    const { data: currentWeekApplications, error: currentWeekError } =
+        (await supabase
+            .from("applications")
+            .select("status")
+            .eq("profile_id", profileId)
+            .gte("created_at", sevenDaysAgo.toISOString())) as {
+            data: Array<{ status: string }> | null;
+            error: any;
+        };
+
+    if (currentWeekError) {
+        throw new Error(
+            `Failed to fetch current week applications: ${currentWeekError.message}`,
+        );
+    }
+
+    const { data: previousWeekApplications, error: previousWeekError } =
+        (await supabase
+            .from("applications")
+            .select("status")
+            .eq("profile_id", profileId)
+            .gte("created_at", fourteenDaysAgo.toISOString())
+            .lt("created_at", sevenDaysAgo.toISOString())) as {
+            data: Array<{ status: string }> | null;
+            error: any;
+        };
+
+    if (previousWeekError) {
+        throw new Error(
+            `Failed to fetch previous week applications: ${previousWeekError.message}`,
+        );
+    }
+
+    const currentByStatus = getEmptyStatusCounts();
+    (currentWeekApplications ?? []).forEach((application) => {
+        if (isValidApplicationStatus(application.status)) {
+            currentByStatus[application.status] += 1;
+        }
+    });
+
+    const previousByStatus = getEmptyStatusCounts();
+    (previousWeekApplications ?? []).forEach((application) => {
+        if (isValidApplicationStatus(application.status)) {
+            previousByStatus[application.status] += 1;
+        }
+    });
+
+    return {
+        current: {
+            applicationsThisWeek: currentWeekApplications?.length ?? 0,
+            applicationsByStatusThisWeek: currentByStatus,
+        },
+        previous: {
+            applicationsThisWeek: previousWeekApplications?.length ?? 0,
+            applicationsByStatusThisWeek: previousByStatus,
+        },
+    };
+}
+
 // ============================================================================
 // DELTA CALCULATION
 // ============================================================================
@@ -159,6 +261,14 @@ interface DeltaMetrics {
     newJobsDelta: number | null;
     calgaryJobsDelta: number | null;
     calgaryJobsPercentChange: number | null;
+    hasLastWeekData: boolean;
+}
+
+interface ProfileApplicationDeltas {
+    applicationsThisWeekDelta: number | null;
+    applicationsThisWeekPercentChange: number | null;
+    statusDelta: Record<ApplicationStatus, number | null>;
+    statusPercentChange: Record<ApplicationStatus, number | null>;
     hasLastWeekData: boolean;
 }
 
@@ -207,6 +317,77 @@ function calculateDeltas(
     };
 }
 
+function calculateProfileApplicationDeltas(
+    current: ProfileApplicationStats,
+    previous: ProfileApplicationStats,
+): ProfileApplicationDeltas {
+    const hasPreviousWeekData = previous.applicationsThisWeek > 0;
+
+    const statusDelta: Record<ApplicationStatus, number | null> = {
+        saved: null,
+        applied: null,
+        interview: null,
+        offer: null,
+        rejected: null,
+    };
+
+    const statusPercentChange: Record<ApplicationStatus, number | null> = {
+        saved: null,
+        applied: null,
+        interview: null,
+        offer: null,
+        rejected: null,
+    };
+
+    const statuses: ApplicationStatus[] = [
+        "saved",
+        "applied",
+        "interview",
+        "offer",
+        "rejected",
+    ];
+
+    statuses.forEach((status) => {
+        const delta =
+            current.applicationsByStatusThisWeek[status] -
+            previous.applicationsByStatusThisWeek[status];
+        statusDelta[status] = hasPreviousWeekData ? delta : null;
+
+        if (hasPreviousWeekData && previous.applicationsByStatusThisWeek[status] > 0) {
+            statusPercentChange[status] = Number(
+                (
+                    (delta / previous.applicationsByStatusThisWeek[status]) *
+                    100
+                ).toFixed(1),
+            );
+        }
+    });
+
+    const applicationsThisWeekDelta =
+        current.applicationsThisWeek - previous.applicationsThisWeek;
+
+    const applicationsThisWeekPercentChange =
+        hasPreviousWeekData && previous.applicationsThisWeek > 0
+            ? Number(
+                  (
+                      (applicationsThisWeekDelta /
+                          previous.applicationsThisWeek) *
+                      100
+                  ).toFixed(1),
+              )
+            : null;
+
+    return {
+        applicationsThisWeekDelta: hasPreviousWeekData
+            ? applicationsThisWeekDelta
+            : null,
+        applicationsThisWeekPercentChange,
+        statusDelta,
+        statusPercentChange,
+        hasLastWeekData: hasPreviousWeekData,
+    };
+}
+
 // ============================================================================
 // DISCORD EMBED FORMATTING
 // ============================================================================
@@ -229,12 +410,16 @@ interface DiscordEmbed {
 function buildDiscordEmbed(
     stats: JobStats,
     deltas: DeltaMetrics,
+    profileName: string,
+    applicationStats: ProfileApplicationStats,
+    applicationDeltas: ProfileApplicationDeltas,
 ): DiscordEmbed {
     const baseUrl =
         process.env.NEXT_PUBLIC_APP_URL || "https://internshipradar.ca";
 
     let description = `📊 **Weekly Internship Summary** 📊\n\n`;
     description += `🍁 Check out the latest Canadian tech internships on **Internship Radar**!\n\n`;
+    description += `🙌 Personalized for **${profileName}** with your weekly application progress.\n\n`;
 
     const totalJobsValue = `**${stats.totalJobs}** open positions${
         deltas.hasLastWeekData && deltas.totalJobsDelta !== null
@@ -254,6 +439,41 @@ function buildDiscordEmbed(
             : ""
     }`;
 
+    const applicationsThisWeekValue = `**${applicationStats.applicationsThisWeek}** applications this week${
+        applicationDeltas.hasLastWeekData &&
+        applicationDeltas.applicationsThisWeekDelta !== null
+            ? ` ${applicationDeltas.applicationsThisWeekDelta >= 0 ? "📈" : "📉"} ${applicationDeltas.applicationsThisWeekDelta > 0 ? "+" : ""}${applicationDeltas.applicationsThisWeekDelta}${applicationDeltas.applicationsThisWeekPercentChange !== null ? ` (${applicationDeltas.applicationsThisWeekPercentChange}%)` : ""}`
+            : ""
+    }`;
+
+    const applicationStatusLabels: Record<ApplicationStatus, string> = {
+        saved: "Saved",
+        applied: "Applied",
+        interview: "Interview",
+        offer: "Offer",
+        rejected: "Rejected",
+    };
+
+    const applicationStatusBreakdown = (
+        ["saved", "applied", "interview", "offer", "rejected"] as ApplicationStatus[]
+    )
+        .map((status) => {
+            const currentValue = applicationStats.applicationsByStatusThisWeek[status];
+            const delta = applicationDeltas.statusDelta[status];
+            const percent = applicationDeltas.statusPercentChange[status];
+
+            if (!applicationDeltas.hasLastWeekData || delta === null) {
+                return `• ${applicationStatusLabels[status]}: **${currentValue}**`;
+            }
+
+            const sign = delta > 0 ? "+" : "";
+            const trendEmoji = delta >= 0 ? "📈" : "📉";
+            const percentText = percent !== null ? ` (${percent}%)` : "";
+
+            return `• ${applicationStatusLabels[status]}: **${currentValue}** ${trendEmoji} ${sign}${delta}${percentText}`;
+        })
+        .join("\n");
+
     const fields: Array<{
         name: string;
         value: string;
@@ -272,6 +492,16 @@ function buildDiscordEmbed(
         {
             name: "Calgary Focus",
             value: calgaryJobsValue,
+            inline: false,
+        },
+        {
+            name: "🧭 Your Application Activity",
+            value: applicationsThisWeekValue,
+            inline: false,
+        },
+        {
+            name: "📌 Your Weekly Status Breakdown",
+            value: applicationStatusBreakdown,
             inline: false,
         },
     ];
@@ -351,12 +581,13 @@ export async function POST(request: NextRequest) {
         // Step 2: Initialize Supabase client
         const supabase = getSupabaseClient();
 
-        // Step 3: Fetch user profile
+        // Step 3: Fetch user profile (lookup by email, same as /api/profiles/me)
         const { data: profile, error: profileError } = await supabase
             .from("profiles")
-            .select("discord_webhook_url, name")
-            .eq("id", user.id)
-            .single();
+            .select("id, discord_webhook_url, name")
+            .ilike("email", user.email)
+            .limit(1)
+            .maybeSingle();
 
         if (profileError || !profile) {
             return NextResponse.json(
@@ -384,10 +615,24 @@ export async function POST(request: NextRequest) {
         // Step 6: Calculate deltas
         const deltas = calculateDeltas(currentStats, lastWeekStats);
 
-        // Step 7: Build Discord embed
-        const embed = buildDiscordEmbed(currentStats, deltas);
+        // Step 7: Fetch personalized application stats and deltas
+        const { current: currentApplicationStats, previous: previousApplicationStats } =
+            await fetchProfileApplicationStats(supabase, profile.id);
+        const applicationDeltas = calculateProfileApplicationDeltas(
+            currentApplicationStats,
+            previousApplicationStats,
+        );
 
-        // Step 8: Send to user's webhook
+        // Step 8: Build Discord embed
+        const embed = buildDiscordEmbed(
+            currentStats,
+            deltas,
+            profile.name || user.email,
+            currentApplicationStats,
+            applicationDeltas,
+        );
+
+        // Step 9: Send to user's webhook
         await sendToDiscordWebhook(profile.discord_webhook_url, embed);
         console.log(
             `✅ Test summary sent to ${profile.name || user.email}: ${profile.discord_webhook_url.slice(0, 50)}...`,
