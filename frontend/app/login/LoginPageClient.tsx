@@ -28,6 +28,11 @@ export default function LoginPageClient() {
     const [oauthSubmitting, setOauthSubmitting] = useState(false);
     const [redirectPath, setRedirectPath] = useState("/profile");
 
+    function redirectAfterAuth(path: string) {
+        router.replace(path);
+        router.refresh();
+    }
+
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
 
@@ -56,7 +61,7 @@ export default function LoginPageClient() {
         const { data: listener } = supabase.auth.onAuthStateChange(
             (_event, session) => {
                 if (session) {
-                    router.replace(redirectPath);
+                    redirectAfterAuth(redirectPath);
                 }
             },
         );
@@ -67,7 +72,7 @@ export default function LoginPageClient() {
             } = await supabase.auth.getSession();
             if (!active) return;
             if (session) {
-                router.replace(redirectPath);
+                redirectAfterAuth(redirectPath);
             } else {
                 setLoading(false);
             }
@@ -151,7 +156,7 @@ export default function LoginPageClient() {
                     throw new Error(error.message);
                 }
 
-                router.replace(redirectPath);
+                redirectAfterAuth(redirectPath);
                 return;
             }
 
@@ -217,7 +222,7 @@ export default function LoginPageClient() {
             );
 
             if (data.session) {
-                router.replace(redirectPath);
+                redirectAfterAuth(redirectPath);
             }
         } catch (err) {
             setAuthError(
