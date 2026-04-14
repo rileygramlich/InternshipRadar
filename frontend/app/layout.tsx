@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
@@ -56,14 +56,7 @@ export default function RootLayout({
                     defaultTheme="system"
                     enableSystem
                 >
-                    <div className="flex min-h-screen overflow-hidden">
-                        <Sidebar />
-                        <main className="flex-1 overflow-y-auto lg:ml-64">
-                            <div className="p-4 pb-24 md:p-6 md:pb-24 lg:p-8 lg:pb-8">
-                                {children}
-                            </div>
-                        </main>
-                    </div>
+                    <AppShell>{children}</AppShell>
                 </ThemeProvider>
             </body>
         </html>

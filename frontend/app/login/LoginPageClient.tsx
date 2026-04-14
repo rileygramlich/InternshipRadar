@@ -73,7 +73,7 @@ export default function LoginPageClient() {
 
     if (loading) {
         return (
-            <div className="flex h-screen items-center justify-center text-gray-700 dark:text-gray-300">
+            <div className="px-4 py-6 text-gray-700 dark:text-gray-300">
                 Checking session...
             </div>
         );
@@ -223,8 +223,8 @@ export default function LoginPageClient() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-md-surface dark:bg-gray-950 px-4">
-            <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#11161d] p-8 shadow-md3-2">
+        <div className="flex justify-center px-4 py-6">
+            <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-md3-2 dark:border dark:border-[#313c4d] dark:bg-[#0b0f14] dark:shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
                 <h1 className="text-2xl font-semibold text-md-on-surface dark:text-white mb-4">
                     {mode === "signin"
                         ? "Sign in to Internship Radar"
@@ -280,8 +280,30 @@ export default function LoginPageClient() {
                         type="button"
                         onClick={handleGoogleAuth}
                         disabled={oauthSubmitting || submitting}
-                        className="btn-ripple w-full rounded-2xl border border-gray-200 dark:border-[#344051] bg-white dark:bg-[#1b2430] px-4 py-3 text-md-on-surface dark:text-gray-100 hover:bg-md-surface dark:hover:bg-[#242d3a] disabled:opacity-60 transition-colors"
+                        className="btn-ripple flex w-full items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-md-on-surface transition-colors hover:bg-md-surface disabled:opacity-60 dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100 dark:hover:bg-[#242d3a]"
                     >
+                        <svg
+                            aria-hidden="true"
+                            viewBox="0 0 48 48"
+                            className="h-5 w-5 shrink-0"
+                        >
+                            <path
+                                fill="#EA4335"
+                                d="M24 9.5c3.18 0 6.04 1.09 8.3 3.22l6.19-6.19C35.74 3.25 30.47 1 24 1 14.73 1 6.73 6.31 2.85 13.9l7.33 5.69C12.03 13.12 17.57 9.5 24 9.5z"
+                            />
+                            <path
+                                fill="#4285F4"
+                                d="M46.5 24.55c0-1.54-.14-3.02-.39-4.45H24v8.42h12.7c-.55 2.98-2.23 5.51-4.76 7.21l7.26 5.63C43.64 37.67 46.5 31.72 46.5 24.55z"
+                            />
+                            <path
+                                fill="#FBBC05"
+                                d="M10.18 28.59a14.5 14.5 0 0 1 0-9.18L2.85 13.9A23.95 23.95 0 0 0 0 24c0 3.84.92 7.47 2.85 10.1l7.33-5.51z"
+                            />
+                            <path
+                                fill="#34A853"
+                                d="M24 48c6.47 0 11.9-2.13 15.87-5.79l-7.26-5.63c-2.02 1.36-4.61 2.16-8.61 2.16-6.43 0-11.97-3.62-13.82-8.59l-7.33 5.51C6.73 41.69 14.73 48 24 48z"
+                            />
+                        </svg>
                         {oauthSubmitting
                             ? "Redirecting to Google..."
                             : "Sign in with Google"}
