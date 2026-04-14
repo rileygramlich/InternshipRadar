@@ -257,6 +257,10 @@ export default function JobManager() {
 
     const [quickApplyStatus, setQuickApplyStatus] =
         useState<ApplicationStatus>("saved");
+    const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+    const [sortBy, setSortBy] = useState<"newest" | "match_score">(
+        "newest",
+    );
     const [addingForJobId, setAddingForJobId] = useState<string | null>(null);
     const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
     const [profileSkills, setProfileSkills] = useState<string[]>([]);
@@ -511,7 +515,54 @@ export default function JobManager() {
         await saveApplication(job, quickApplyStatus, getJobMatchScore(job));
     }
 
-    const visibleJobs = jobs.filter((job) => !savedJobIds.has(job.id));
+    const availableLocations = useMemo(() => {
+        const locations = jobs
+            .map((job) => job.location)
+            .filter((location): location is string => Boolean(location?.trim()));
+
+        return Array.from(new Set(locations)).sort((a, b) =>
+            a.localeCompare(b),
+        );
+    }, [jobs]);
+
+    function toggleLocation(location: string) {
+        setSelectedLocations((prev) =>
+            prev.includes(location)
+                ? prev.filter((item) => item !== location)
+                : [...prev, location],
+        );
+    }
+
+    const unsavedJobCount = useMemo(
+        () => jobs.filter((job) => !savedJobIds.has(job.id)).length,
+        [jobs, savedJobIds],
+    );
+
+    const visibleJobs = useMemo(() => {
+        let list = jobs.filter((job) => !savedJobIds.has(job.id));
+
+        if (selectedLocations.length > 0) {
+            list = list.filter(
+                (job) =>
+                    typeof job.location === "string" &&
+                    selectedLocations.includes(job.location),
+            );
+        }
+
+        if (sortBy === "match_score") {
+            list = [...list].sort(
+                (a, b) => getJobMatchScore(b) - getJobMatchScore(a),
+            );
+        } else {
+            list = [...list].sort(
+                (a, b) =>
+                    new Date(b.created_at).getTime() -
+                    new Date(a.created_at).getTime(),
+            );
+        }
+
+        return list;
+    }, [getJobMatchScore, jobs, savedJobIds, selectedLocations, sortBy]);
 
     return (
         <div className="space-y-4 md:space-y-6">
@@ -565,6 +616,69 @@ export default function JobManager() {
                         <option value="offer">Offer</option>
                         <option value="rejected">Rejected</option>
                     </select>
+                </div>
+
+                <div className="mb-4 space-y-3 rounded-2xl border border-gray-200 p-3 dark:border-[#344051] dark:bg-[#1b2430]">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-md-on-surface dark:text-gray-300">
+                                Filter by Location
+                            </p>
+                            <p className="text-xs text-md-subtitle dark:text-gray-400">
+                                Showing {visibleJobs.length} of {unsavedJobCount} unsaved jobs
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm text-md-on-surface dark:text-gray-300">
+                                Sort
+                            </label>
+                            <select
+                                className="min-h-[40px] rounded-xl border border-gray-200 px-3 text-sm shadow-sm dark:border-[#344051] dark:bg-[#11161d] dark:text-gray-100"
+                                value={sortBy}
+                                onChange={(event) =>
+                                    setSortBy(
+                                        event.target.value as
+                                            | "newest"
+                                            | "match_score",
+                                    )
+                                }
+                            >
+                                <option value="newest">Newest</option>
+                                <option value="match_score">Best Match</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {availableLocations.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {availableLocations.map((location) => {
+                                const isSelected = selectedLocations.includes(location);
+                                return (
+                                    <button
+                                        key={location}
+                                        type="button"
+                                        onClick={() => toggleLocation(location)}
+                                        className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                                            isSelected
+                                                ? "border-primary bg-primary text-white dark:border-blue-400 dark:bg-blue-500"
+                                                : "border-gray-300 text-md-on-surface hover:bg-gray-100 dark:border-[#4b5565] dark:text-gray-200 dark:hover:bg-[#273142]"
+                                        }`}
+                                    >
+                                        {location}
+                                    </button>
+                                );
+                            })}
+                            {selectedLocations.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedLocations([])}
+                                    className="rounded-full border border-gray-300 px-3 py-1.5 text-xs font-medium text-md-subtitle hover:bg-gray-100 dark:border-[#4b5565] dark:text-gray-300 dark:hover:bg-[#273142]"
+                                >
+                                    Clear locations
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {loading && visibleJobs.length === 0 ? (

@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import JobManager from "@/components/JobManager";
+
+export const metadata: Metadata = {
+    title: "Discovery",
+};
 
 export default function RadarPage() {
     return (

@@ -144,6 +144,15 @@ export async function PUT(req: NextRequest) {
 
         const profileColumns = new Set(Object.keys(profile ?? {}));
 
+        if (
+            typeof body.experience_level === "string" &&
+            !profileColumns.has("experience_level")
+        ) {
+            return badRequest(
+                "Profile schema is out of date. Add the experience_level column to profiles and try again.",
+            );
+        }
+
         const updates = {
             ...(profileColumns.has("name") && typeof body.name === "string"
                 ? { name: body.name.trim() }
