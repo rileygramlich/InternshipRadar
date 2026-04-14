@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
         const body = (await req.json()) as {
             company?: string;
             title?: string;
+            location?: string;
             url?: string;
             description?: string;
             tech_tags?: string[];
@@ -103,6 +104,7 @@ export async function POST(req: NextRequest) {
         const job = await createJobPosting(
             company,
             title,
+            body.location?.trim() ?? "",
             body.url?.trim() ?? "",
             storedDescription,
             (body.tech_tags ?? []).map((tag) => tag.trim()).filter(Boolean),

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
 export const runtime = "nodejs";
-
 const JOB_LINK_INPUT_CHAR_LIMIT = 8000;
 const JOB_LINK_MAX_OUTPUT_TOKENS = 350;
 
@@ -69,7 +68,6 @@ export async function POST(req: NextRequest) {
         const text = htmlToText(html).slice(0, JOB_LINK_INPUT_CHAR_LIMIT);
 
         if (!text) {
-            return badRequest("Could not read content from that URL.");
         }
 
         const apiKey = process.env.OPENAI_API_KEY;
@@ -100,6 +98,7 @@ export async function POST(req: NextRequest) {
         const parsed = JSON.parse(raw) as {
             company?: unknown;
             title?: unknown;
+            location?: unknown;
             description?: unknown;
             tech_tags?: unknown;
         };
@@ -108,6 +107,8 @@ export async function POST(req: NextRequest) {
             typeof parsed.company === "string" ? parsed.company.trim() : "";
         const title =
             typeof parsed.title === "string" ? parsed.title.trim() : "";
+        const location =
+            typeof parsed.location === "string" ? parsed.location.trim() : "";
         const description =
             typeof parsed.description === "string"
                 ? parsed.description.trim()
@@ -123,6 +124,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             company,
             title,
+            location,
             description,
             tech_tags,
             url: normalizedUrl,

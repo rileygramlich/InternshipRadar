@@ -288,6 +288,7 @@ export default function ApplicationKanban() {
     const [addForm, setAddForm] = useState({
         company: "",
         title: "",
+        location: "",
         url: "",
         description: "",
         tech_tags: "",
@@ -567,6 +568,10 @@ export default function ApplicationKanban() {
                     typeof json.title === "string" && json.title.trim()
                         ? json.title.trim()
                         : prev.title,
+                location:
+                    typeof json.location === "string" && json.location.trim()
+                        ? json.location.trim()
+                        : prev.location,
                 description:
                     typeof json.description === "string" &&
                     json.description.trim()
@@ -611,6 +616,7 @@ export default function ApplicationKanban() {
                         id: "temp",
                         company: addForm.company,
                         title: addForm.title,
+                        location: addForm.location,
                         url: addForm.url,
                         description: addForm.description,
                         tech_tags: techTags,
@@ -631,6 +637,7 @@ export default function ApplicationKanban() {
                         id: "temp",
                         company: addForm.company,
                         title: addForm.title,
+                        location: addForm.location,
                         url: addForm.url,
                         description: addForm.description,
                         tech_tags: techTags,
@@ -650,6 +657,7 @@ export default function ApplicationKanban() {
                 body: JSON.stringify({
                     company: addForm.company.trim(),
                     title: addForm.title.trim(),
+                    location: addForm.location.trim(),
                     url: addForm.url.trim(),
                     description: addForm.description.trim(),
                     tech_tags: techTags,
@@ -666,6 +674,7 @@ export default function ApplicationKanban() {
             setAddForm({
                 company: "",
                 title: "",
+                location: "",
                 url: "",
                 description: "",
                 tech_tags: "",
@@ -870,6 +879,11 @@ export default function ApplicationKanban() {
                                                       ?.title ||
                                                       "Unknown Job Title"}
                                               </p>
+                                              {application.job_postings?.location && (
+                                                  <p className="mt-1 text-xs font-medium text-primary dark:text-blue-300">
+                                                      {application.job_postings.location}
+                                                  </p>
+                                              )}
                                               {application.job_postings
                                                   ?.description && (
                                                   <p className="text-xs text-md-subtitle dark:text-gray-400 mt-1 line-clamp-3">

@@ -120,6 +120,8 @@ export default function ProfileManager() {
     const [success, setSuccess] = useState<string | null>(null);
     const [resumeParsing, setResumeParsing] = useState(false);
     const [resumeError, setResumeError] = useState<string | null>(null);
+    const [testingSummary, setTestingSummary] = useState(false);
+    const [testError, setTestError] = useState<string | null>(null);
 
     const [edits, setEdits] = useState<EditableFields | null>(null);
 
@@ -283,6 +285,39 @@ export default function ProfileManager() {
             );
         } finally {
             setSaving(false);
+        }
+    }
+
+    async function handleTestDiscordSummary() {
+        setTestingSummary(true);
+        setTestError(null);
+
+        try {
+            const res = await fetch("/api/test-discord-summary", {
+                method: "POST",
+            });
+
+            const json = (await parseApiResponse(res)) as {
+                error?: string;
+                success?: boolean;
+                message?: string;
+            } | null;
+
+            if (!res.ok) {
+                throw new Error(json?.error || "Failed to send test summary");
+            }
+
+            setSuccess(
+                json?.message || "Test Discord summary sent successfully!",
+            );
+        } catch (err) {
+            setTestError(
+                err instanceof Error
+                    ? err.message
+                    : "Failed to send test summary",
+            );
+        } finally {
+            setTestingSummary(false);
         }
     }
 
@@ -526,6 +561,36 @@ export default function ProfileManager() {
                     </div>
                 )}
             </div>
+            {profile?.email === "rgram060@mtroyal.ca" && (
+                <div className="rounded-2xl bg-white p-6 shadow-md3-1 dark:bg-[#0f1115] border-2 border-orange-500 dark:border-orange-600">
+                    <h2 className="text-xl font-semibold text-md-on-surface dark:text-white mb-4">
+                        🧪 Test Discord Summary
+                    </h2>
+                    <p className="text-sm text-md-subtitle dark:text-gray-400 mb-4">
+                        Send a test Discord summary to your webhook to verify
+                        it's working correctly.
+                    </p>
+                    {testError && (
+                        <p className="text-sm text-red-600 dark:text-red-400 mb-3">
+                            {testError}
+                        </p>
+                    )}
+                    {success && (
+                        <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-3">
+                            {success}
+                        </p>
+                    )}
+                    <button
+                        onClick={handleTestDiscordSummary}
+                        disabled={
+                            testingSummary || !profile?.discord_webhook_url
+                        }
+                        className="btn-ripple px-5 py-2 rounded-2xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 disabled:opacity-60 transition-colors"
+                    >
+                        {testingSummary ? "Sending…" : "Send Test Summary"}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

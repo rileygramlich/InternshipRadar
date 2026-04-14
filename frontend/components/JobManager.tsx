@@ -621,6 +621,11 @@ export default function JobManager() {
                                                     <p className="line-clamp-2 text-sm text-md-subtitle dark:text-gray-300 md:text-base">
                                                         {job.title}
                                                     </p>
+                                                    {job.location && (
+                                                        <p className="text-xs font-medium text-primary dark:text-blue-300 md:text-sm">
+                                                            {job.location}
+                                                        </p>
+                                                    )}
                                                     <button
                                                         type="button"
                                                         onClick={() =>

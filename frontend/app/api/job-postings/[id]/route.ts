@@ -35,6 +35,7 @@ export async function PUT(
         const updates = (await req.json()) as {
             company?: string;
             title?: string;
+            location?: string;
             url?: string;
             description?: string;
         };

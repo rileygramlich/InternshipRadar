@@ -121,6 +121,7 @@ export async function deleteProfile(profileId: string) {
 export async function createJobPosting(
     company: string,
     title: string,
+    location: string,
     url: string,
     description: string,
     tech_tags?: string[],
@@ -131,6 +132,7 @@ export async function createJobPosting(
             {
                 company,
                 title,
+                location,
                 url,
                 description,
                 ...(tech_tags !== undefined ? { tech_tags } : {}),
@@ -184,6 +186,7 @@ export async function updateJobPosting(
     updates: {
         company?: string;
         title?: string;
+        location?: string;
         url?: string;
         description?: string;
         tech_tags?: string[];
