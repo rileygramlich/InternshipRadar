@@ -133,7 +133,7 @@ export default function Sidebar() {
 
     return (
         <>
-            <aside className="hidden md:flex md:fixed md:left-0 md:top-0 md:h-screen md:w-64 md:flex-col md:bg-white md:shadow-md3-1 dark:md:bg-[#0b0f14]">
+            <aside className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:bg-white lg:shadow-md3-1 dark:lg:bg-[#0b0f14]">
                 <div className="p-6 lg:p-8">
                     <h1 className="text-xl font-bold text-md-on-surface dark:text-white lg:text-2xl">
                         Radar
@@ -239,7 +239,7 @@ export default function Sidebar() {
                 </div>
             </aside>
 
-            <nav className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around border-t border-gray-100 bg-white px-2 py-2 dark:border-[#313c4d] dark:bg-[#0b0f14] md:hidden">
+            <nav className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around border-t border-gray-100 bg-white px-2 py-2 dark:border-[#313c4d] dark:bg-[#0b0f14] lg:hidden">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (

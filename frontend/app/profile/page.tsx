@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import ProfileManager from "@/components/ProfileManager";
+
+export const metadata: Metadata = {
+    title: "Settings",
+};
 
 export default function ProfilePage() {
     return (

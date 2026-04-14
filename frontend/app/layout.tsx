@@ -11,7 +11,10 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-    title: "InternshipRadar",
+    title: {
+        default: "InternshipRadar",
+        template: "%s | InternshipRadar",
+    },
     description: "Discover and track your ideal internship opportunities",
     manifest: "/site.webmanifest",
     icons: {
@@ -55,8 +58,8 @@ export default function RootLayout({
                 >
                     <div className="flex min-h-screen overflow-hidden">
                         <Sidebar />
-                        <main className="flex-1 overflow-y-auto md:ml-64">
-                            <div className="p-4 pb-24 md:p-6 md:pb-6 lg:p-8">
+                        <main className="flex-1 overflow-y-auto lg:ml-64">
+                            <div className="p-4 pb-24 md:p-6 md:pb-24 lg:p-8 lg:pb-8">
                                 {children}
                             </div>
                         </main>

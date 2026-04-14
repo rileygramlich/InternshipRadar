@@ -707,9 +707,9 @@ export default function ApplicationKanban() {
     }
 
     return (
-        <div className="space-y-4 overflow-x-hidden lg:space-y-6">
+        <div className="space-y-4 lg:space-y-6">
             {/* Analytics summary bar */}
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl bg-primary-light px-4 py-3 text-sm text-md-on-surface dark:bg-blue-900 dark:text-gray-200">
+            <div className="flex flex-col gap-3 rounded-2xl bg-primary-light px-4 py-3 text-sm text-md-on-surface dark:bg-blue-900 dark:text-gray-200 md:flex-row md:items-center md:justify-between md:gap-x-4 md:gap-y-2">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                     {loading && applications.length === 0 ? (
                         <>
@@ -760,7 +760,7 @@ export default function ApplicationKanban() {
                 <button
                     type="button"
                     onClick={() => setShowMatchScore((prev) => !prev)}
-                    className="btn-ripple inline-flex min-h-[36px] items-center rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-md-on-surface hover:bg-gray-100 dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100 dark:hover:bg-[#202938]"
+                    className="btn-ripple inline-flex min-h-[40px] self-start items-center rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-md-on-surface hover:bg-gray-100 dark:border-[#344051] dark:bg-[#1b2430] dark:text-gray-100 dark:hover:bg-[#202938] md:self-auto"
                     aria-pressed={showMatchScore}
                 >
                     {showMatchScore ? "Hide Match Score" : "Show Match Score"}
@@ -773,12 +773,12 @@ export default function ApplicationKanban() {
                 </p>
             )}
 
-            <div className="-mx-4 flex snap-x snap-mandatory flex-nowrap gap-4 overflow-x-auto px-4 pb-2 hide-scrollbar lg:mx-0 lg:grid lg:grid-cols-5 lg:gap-4 lg:overflow-visible lg:px-0">
+            <div className="flex snap-x snap-mandatory flex-nowrap gap-4 overflow-x-auto pb-2 hide-scrollbar xl:grid xl:grid-cols-5 xl:gap-4 xl:overflow-visible">
                 {loading && applications.length === 0
                     ? COLUMNS.map((column) => (
                           <div
                               key={`loading-${column.key}`}
-                              className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#1b2430] lg:w-auto lg:shrink lg:snap-none"
+                              className="w-[88vw] shrink-0 snap-start rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#1b2430] md:w-[calc((100%-1rem)/2)] xl:w-auto xl:shrink xl:snap-none"
                           >
                               <div className="mb-3 flex items-center justify-between">
                                   <div className="loading-shimmer h-4 w-20 rounded-lg" />
@@ -807,7 +807,7 @@ export default function ApplicationKanban() {
                               key={column.key}
                               onDragOver={(event) => event.preventDefault()}
                               onDrop={onDropToColumn(column.key)}
-                              className="w-[85vw] shrink-0 snap-center rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#1b2430] lg:w-auto lg:shrink lg:snap-none"
+                              className="w-[88vw] shrink-0 snap-start rounded-2xl bg-md-surface p-3 min-h-52 dark:bg-[#1b2430] md:w-[calc((100%-1rem)/2)] xl:w-auto xl:shrink xl:snap-none"
                           >
                               <div className="mb-3 flex items-center justify-between">
                                   <div className="flex items-center gap-2">
