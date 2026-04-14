@@ -6,9 +6,17 @@ import { useRouter } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/client";
 
+function getAppBaseUrl() {
+    return (
+        process.env.NEXT_PUBLIC_APP_URL ||
+        (typeof window !== "undefined" ? window.location.origin : "")
+    );
+}
+
 export default function LoginPageClient() {
     const supabase = useMemo(() => createClient(), []);
     const router = useRouter();
+    const appBaseUrl = getAppBaseUrl();
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -85,12 +93,11 @@ export default function LoginPageClient() {
         setOauthSubmitting(true);
 
         try {
-            const callbackUrl =
-                typeof window !== "undefined"
-                    ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-                          redirectPath,
-                      )}`
-                    : undefined;
+            const callbackUrl = appBaseUrl
+                ? `${appBaseUrl}/auth/callback?next=${encodeURIComponent(
+                      redirectPath,
+                  )}`
+                : undefined;
 
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: "google",
@@ -158,10 +165,9 @@ export default function LoginPageClient() {
                         full_name: name.trim(),
                         display_name: name.trim(),
                     },
-                    emailRedirectTo:
-                        typeof window !== "undefined"
-                            ? `${window.location.origin}/profile`
-                            : undefined,
+                    emailRedirectTo: appBaseUrl
+                        ? `${appBaseUrl}/profile`
+                        : undefined,
                 },
             });
 
